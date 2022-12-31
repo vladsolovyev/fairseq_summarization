@@ -16,4 +16,5 @@ CUDA_VISIBLE_DEVICES=0 fairseq-train xlsum_data \
   --restore-file $MBART_MODEL \
   --reset-optimizer --reset-meters --reset-dataloader --reset-lr-scheduler \
   --langs $langs \
-  --ddp-backend legacy_ddp
+  --ddp-backend legacy_ddp \
+  --skip-invalid-size-inputs-valid-test
