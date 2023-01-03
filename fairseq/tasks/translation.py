@@ -26,11 +26,13 @@ from fairseq.data import (
     indexed_dataset,
 )
 from fairseq.data.indexed_dataset import get_available_dataset_impl
+from fairseq.data.shorten_dataset import maybe_shorten_dataset
 from fairseq.dataclass import ChoiceEnum, FairseqDataclass
 from fairseq.tasks import FairseqTask, register_task
 
 
 EVAL_BLEU_ORDER = 4
+SHORTEN_METHOD_CHOICES = ChoiceEnum(["none", "truncate", "random_crop"])
 
 
 logger = logging.getLogger(__name__)
@@ -58,6 +60,8 @@ def load_langpair_dataset(
     shuffle=True,
     pad_to_multiple=1,
     prepend_bos_src=None,
+    shorten_method="none",
+    shorten_data_split_list=""
 ):
     def split_exists(split, src, tgt, lang, data_path):
         filename = os.path.join(data_path, "{}.{}-{}.{}".format(split, src, tgt, lang))
@@ -85,6 +89,19 @@ def load_langpair_dataset(
         src_dataset = data_utils.load_indexed_dataset(
             prefix + src, src_dict, dataset_impl
         )
+        num_appended_elements = 0
+        if prepend_bos or prepend_bos_src:
+            num_appended_elements += 1
+        if append_source_id:
+            num_appended_elements += 1
+        src_dataset = maybe_shorten_dataset(
+            src_dataset,
+            split,
+            shorten_data_split_list,
+            shorten_method,
+            max_source_positions - num_appended_elements,
+            None,
+        )
         if truncate_source:
             src_dataset = AppendTokenDataset(
                 TruncateDataset(
@@ -99,6 +116,14 @@ def load_langpair_dataset(
             prefix + tgt, tgt_dict, dataset_impl
         )
         if tgt_dataset is not None:
+            tgt_dataset = maybe_shorten_dataset(
+                tgt_dataset,
+                split,
+                shorten_data_split_list,
+                shorten_method,
+                max_target_positions - num_appended_elements,
+                None,
+            )
             tgt_datasets.append(tgt_dataset)
 
         logger.info(
@@ -262,6 +287,19 @@ class TranslationConfig(FairseqDataclass):
     eval_bleu_print_samples: bool = field(
         default=False, metadata={"help": "print sample generations during validation"}
     )
+    shorten_method: SHORTEN_METHOD_CHOICES = field(
+        default="none",
+        metadata={
+            "help": "if not none, shorten sequences that exceed --tokens-per-sample"
+        },
+    )
+    shorten_data_split_list: str = field(
+        default="",
+        metadata={
+            "help": "comma-separated list of dataset splits to apply shortening to, "
+                    'e.g., "train,valid" (default: all dataset splits)'
+        },
+    )
 
 
 @register_task("translation", dataclass=TranslationConfig)
@@ -354,6 +392,8 @@ class TranslationTask(FairseqTask):
             num_buckets=self.cfg.num_batch_buckets,
             shuffle=(split != "test"),
             pad_to_multiple=self.cfg.required_seq_len_multiple,
+            shorten_method=self.cfg.shorten_method,
+            shorten_data_split_list=self.cfg.shorten_data_split_list
         )
 
     def build_dataset_for_inference(self, src_tokens, src_lengths, constraints=None):

@@ -16,4 +16,6 @@ fairseq-train xlsum_data \
   --restore-file $MBART_MODEL \
   --reset-optimizer --reset-meters --reset-dataloader --reset-lr-scheduler \
   --langs $langs \
-  --ddp-backend legacy_ddp
+  --ddp-backend legacy_ddp \
+  --max-epoch 1 \
+  --shorten-method truncate

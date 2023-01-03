@@ -88,6 +88,8 @@ class TranslationFromPretrainedBARTTask(TranslationTask):
             load_alignments=self.args.load_alignments,
             prepend_bos=getattr(self.args, "prepend_bos", False),
             append_source_id=True,
+            shorten_method=self.args.shorten_method,
+            shorten_data_split_list=self.args.shorten_data_split_list
         )
 
     def build_generator(self, models, args, **unused):
