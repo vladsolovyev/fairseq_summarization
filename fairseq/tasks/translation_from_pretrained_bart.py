@@ -74,8 +74,10 @@ class TranslationFromPretrainedBARTTask(TranslationTask):
         self.datasets[split] = load_langpair_dataset(
             data_path,
             split,
+            "input_text.{}".format(src),
             src,
             self.src_dict,
+            "summary.{}".format(tgt),
             tgt,
             self.tgt_dict,
             combine=combine,

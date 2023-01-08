@@ -5,7 +5,7 @@ data_types = ["train", "test", "validation"]
 new_data_types = ["train", "test", "valid"]
 columns = ["text", "target"]
 new_columns = ["input_text", "summary"]
-languages = ["en", "es", "ru"]
+languages = ["en_XX", "es_XX", "ru_RU"]
 datasets = [load_dataset("GEM/xlsum", "english"),
             load_dataset("GEM/xlsum", "spanish"),
             load_dataset("GEM/xlsum", "russian")]

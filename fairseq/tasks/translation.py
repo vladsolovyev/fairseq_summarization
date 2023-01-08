@@ -42,8 +42,10 @@ def load_langpair_dataset(
     data_path,
     split,
     src,
+    src_lang,
     src_dict,
     tgt,
+    tgt_lang,
     tgt_dict,
     combine,
     dataset_impl,
@@ -161,13 +163,13 @@ def load_langpair_dataset(
     eos = None
     if append_source_id:
         src_dataset = AppendTokenDataset(
-            src_dataset, src_dict.index("[{}]".format(src))
+            src_dataset, src_dict.index("[{}]".format(src_lang))
         )
         if tgt_dataset is not None:
             tgt_dataset = AppendTokenDataset(
-                tgt_dataset, tgt_dict.index("[{}]".format(tgt))
+                tgt_dataset, tgt_dict.index("[{}]".format(tgt_lang))
             )
-        eos = tgt_dict.index("[{}]".format(tgt))
+        eos = tgt_dict.index("[{}]".format(tgt_lang))
 
     align_dataset = None
     if load_alignments:
@@ -344,16 +346,16 @@ class TranslationTask(FairseqTask):
 
         # load dictionaries
         src_dict = cls.load_dictionary(
-            os.path.join(paths[0], "dict.{}.txt".format(cfg.source_lang))
+            os.path.join(paths[0], "dict.input_text.{}.txt".format(cfg.source_lang))
         )
         tgt_dict = cls.load_dictionary(
-            os.path.join(paths[0], "dict.{}.txt".format(cfg.target_lang))
+            os.path.join(paths[0], "dict.summary.{}.txt".format(cfg.target_lang))
         )
         assert src_dict.pad() == tgt_dict.pad()
         assert src_dict.eos() == tgt_dict.eos()
         assert src_dict.unk() == tgt_dict.unk()
-        logger.info("[{}] dictionary: {} types".format(cfg.source_lang, len(src_dict)))
-        logger.info("[{}] dictionary: {} types".format(cfg.target_lang, len(tgt_dict)))
+        logger.info("[input_text.{}] dictionary: {} types".format(cfg.source_lang, len(src_dict)))
+        logger.info("[summary.{}] dictionary: {} types".format(cfg.target_lang, len(tgt_dict)))
 
         return cls(cfg, src_dict, tgt_dict)
 
@@ -377,7 +379,9 @@ class TranslationTask(FairseqTask):
             data_path,
             split,
             src,
+            src,
             self.src_dict,
+            tgt,
             tgt,
             self.tgt_dict,
             combine=combine,
