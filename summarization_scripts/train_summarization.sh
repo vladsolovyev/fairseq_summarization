@@ -17,5 +17,5 @@ fairseq-train xlsum_data \
   --reset-optimizer --reset-meters --reset-dataloader --reset-lr-scheduler \
   --langs $langs \
   --ddp-backend legacy_ddp \
-  --max-epoch 1 \
-  --shorten-method truncate
+  --max-epoch 2 \
+  --truncate-source
