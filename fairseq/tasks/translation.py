@@ -31,7 +31,6 @@ from fairseq.dataclass import ChoiceEnum, FairseqDataclass
 from fairseq.tasks import FairseqTask, register_task
 
 EVAL_BLEU_ORDER = 4
-SHORTEN_METHOD_CHOICES = ChoiceEnum(["none", "truncate", "random_crop"])
 
 
 logger = logging.getLogger(__name__)
