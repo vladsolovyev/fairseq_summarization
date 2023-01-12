@@ -3,6 +3,6 @@ DATA=../summarization_datasets/xlsum/parser
 fairseq-preprocess --source-lang input_text.en_XX --target-lang summary.en_XX \
     --trainpref $DATA/train --validpref $DATA/valid --testpref $DATA/test \
     --destdir xlsum_data \
-	--srcdict $DICT \
+    --srcdict $DICT \
     --tgtdict $DICT \
     --workers 20
