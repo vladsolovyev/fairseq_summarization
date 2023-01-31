@@ -144,10 +144,7 @@ outputs
 summarization_datasets/mbart.cc25.v2
 
 # Data
-summarization_datasets/wikilingua/parser/test*
-summarization_datasets/wikilingua/parser/train*
-summarization_datasets/wikilingua/parser/valid*
-summarization_datasets/xlsum/parser/test*
-summarization_datasets/xlsum/parser/train*
-summarization_datasets/xlsum/parser/valid*
-summarization_scripts/xlsum_data/
+summarization_datasets/xlsum*
+summarization_datasets/wikilingua*
+summarization_scripts/xlsum*
+summarization_scripts/wikilingua*
