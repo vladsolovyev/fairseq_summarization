@@ -148,7 +148,7 @@ def _main(cfg: DictConfig, output_file):
         ignore_invalid_inputs=cfg.dataset.skip_invalid_size_inputs_valid_test,
         required_batch_size_multiple=cfg.dataset.required_batch_size_multiple,
         seed=cfg.common.seed,
-        num_shards=cfg.distributed_training.distributed_world_size,
+        num_shards=cfg.dataset.num_workers,
         shard_id=cfg.distributed_training.distributed_rank,
         num_workers=cfg.dataset.num_workers,
         data_buffer_size=cfg.dataset.data_buffer_size,
@@ -399,6 +399,7 @@ def _main(cfg: DictConfig, output_file):
 
 
 def cli_main():
+    torch.clear_autocast_cache()
     parser = options.get_generation_parser()
     # TODO: replace this workaround with refactoring of `AudioPretraining`
     parser.add_argument(
@@ -410,7 +411,7 @@ def cli_main():
         "model args (e.g. `AudioPretraining`)",
     )
     args = options.parse_args_and_arch(parser)
-    main(args)
+    return main(args)
 
 
 if __name__ == "__main__":
