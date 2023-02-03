@@ -25,4 +25,5 @@ def generate_and_evaluate_summaries(language, checkpoint_dir):
     )
     results = generate.cli_main().scores
     print("Checkpoint: {}, language: {}, results: {}".format(checkpoint_dir, language, results))
+    sys.argv = sys.argv[:1]
     return results

@@ -45,6 +45,7 @@ def train_summarization_model(data_dir="xlsum", language="en_XX",
          "--batch-size", "8"]
     )
     train.cli_main()
+    sys.argv = sys.argv[:1]
 
 
 if __name__ == "__main__":
