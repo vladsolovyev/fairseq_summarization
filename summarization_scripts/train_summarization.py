@@ -40,7 +40,9 @@ def train_summarization_model(data_dir="xlsum", language="en_XX",
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--max-epoch", "1",
          "--disable-validation",
-         "--truncate-source"]
+         "--truncate-source",
+         "--required-batch-size-multiple", "1",
+         "--batch-size", "8"]
     )
     train.cli_main()
 
