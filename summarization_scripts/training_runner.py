@@ -13,6 +13,11 @@ languages = ["en_XX", "es_XX", "ru_RU"]
 metrics = dict()
 
 
+def save_metrics():
+    metrics_df = pd.DataFrame.from_dict(metrics, orient='index')
+    metrics_df.to_csv("{}/metrics.csv".format(output_dir))
+
+
 def free_memory():
     showUtilization()
     gc.collect()
@@ -31,6 +36,7 @@ for language in languages:
     metrics[language] = generate_and_evaluate_summaries(language=language, checkpoint_dir=checkpoint_dir)
     if language != "en_XX":
         shutil.rmtree(checkpoint_dir)
+    save_metrics()
     free_memory()
 
 # zero shot. Evaluate spanish and russian datasets using english model
@@ -38,6 +44,7 @@ for language in languages[1:3]:
     metrics["en_XX_zero_{}".format(language)] =\
         generate_and_evaluate_summaries(language=language,
                                         checkpoint_dir="{}/xlsum/en_XX".format(output_dir))
+    save_metrics()
     free_memory()
 
 # few shot experiments. Tune english model using few data from spanish and russian datasets
@@ -52,6 +59,7 @@ for language in languages[1:3]:
         metrics["en_XX_tuned_{}_{}".format(language, data_size)] =\
             generate_and_evaluate_summaries(language=language, checkpoint_dir=checkpoint_dir)
         shutil.rmtree(checkpoint_dir)
+        save_metrics()
         free_memory()
 
 
@@ -65,10 +73,10 @@ for language in languages[1:3]:
     metrics["en_XX_tuned_{}".format(language)] = \
         generate_and_evaluate_summaries(language=language, checkpoint_dir=checkpoint_dir)
     shutil.rmtree(checkpoint_dir)
+    save_metrics()
     free_memory()
 
 # all three languages together
 # add multilingual case here later
 
-metrics_df = pd.DataFrame.from_dict(metrics, orient='index')
-metrics_df.to_csv("{}/metrics.csv".format(output_dir))
+save_metrics()
