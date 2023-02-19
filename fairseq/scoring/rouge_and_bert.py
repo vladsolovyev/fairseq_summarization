@@ -10,12 +10,12 @@ import numpy as np
 
 from fairseq.dataclass import FairseqDataclass
 from fairseq.scoring import BaseScorer, register_scorer
+from fairseq.scoring.multilingual_tokenizer import MultilingualTokenizer
 
 
-#check if it is possible to delete it later
 @dataclass
 class RougeBertScoreScorerConfig(FairseqDataclass):
-    bert_score_lang: str = field(default="en", metadata={"help": "BERTScore language"})
+    lang: str = field(default="en_XX", metadata={"help": "Language"})
 
 
 @register_scorer("rougebert", dataclass=RougeBertScoreScorerConfig)
@@ -38,7 +38,8 @@ class RougeBertScoreScorer(BaseScorer):
     def rouge_and_bert_score(self):
         rouge_result = evaluate.load("rouge").compute(predictions=self.pred,
                                                       references=self.ref,
-                                                      use_stemmer=True)
+                                                      tokenizer=MultilingualTokenizer(language=self.cfg.lang,
+                                                                                      use_stemmer=True).tokenize)
         bert_result = evaluate.load("bertscore").compute(predictions=self.pred,
                                                          references=self.ref,
                                                          model_type="bert-base-multilingual-cased")
