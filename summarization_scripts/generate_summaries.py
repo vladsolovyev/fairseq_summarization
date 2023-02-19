@@ -32,7 +32,7 @@ def generate_and_evaluate_summaries(language="en_XX",
          "--lang-tok-style", "mbart"]
     )
     if torch.cuda.is_available():
-        sys.argv.extend("--memory-efficient-fp16")
+        sys.argv.append("--memory-efficient-fp16")
     results = generate.cli_main().scores
     print("Checkpoint: {}, language: {}, results: {}".format(checkpoint_dir, language, results))
     sys.argv = sys.argv[:1]

@@ -48,6 +48,6 @@ def train_summarization_model(save_dir="default",
          "--lang-tok-style", "mbart"]
     )
     if torch.cuda.is_available():
-        sys.argv.extend("--memory-efficient-fp16")
+        sys.argv.append("--memory-efficient-fp16")
     train.cli_main()
     sys.argv = sys.argv[:1]
