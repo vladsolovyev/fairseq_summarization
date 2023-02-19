@@ -1,6 +1,6 @@
 import gc
-from datetime import datetime
 import shutil
+from datetime import datetime
 
 import pandas as pd
 import torch
@@ -11,6 +11,8 @@ from summarization_scripts.train_summarization import train_summarization_model
 
 languages = ["en_XX", "es_XX", "ru_RU"]
 metrics = dict()
+
+output_dir = datetime.today().strftime('%Y-%m-%d')
 
 
 def save_metrics():
@@ -26,14 +28,16 @@ def free_memory():
     showUtilization()
 
 
-output_dir = datetime.today().strftime('%Y-%m-%d')
-
 # every language separately
 for language in languages:
     checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
-    train_summarization_model(language=language, save_dir=checkpoint_dir)
+    train_summarization_model(data_dir="xlsum",
+                              lang_pairs="{}-{}".format(language, language),
+                              save_dir=checkpoint_dir)
     free_memory()
-    metrics[language] = generate_and_evaluate_summaries(language=language, checkpoint_dir=checkpoint_dir)
+    metrics[language] = generate_and_evaluate_summaries(language=language,
+                                                        lang_pairs="{}-{}".format(language, language),
+                                                        checkpoint_dir=checkpoint_dir)
     if language != "en_XX":
         shutil.rmtree(checkpoint_dir)
     save_metrics()
@@ -41,8 +45,9 @@ for language in languages:
 
 # zero shot. Evaluate spanish and russian datasets using english model
 for language in languages[1:3]:
-    metrics["en_XX_zero_{}".format(language)] =\
+    metrics["en_XX_zero_{}".format(language)] = \
         generate_and_evaluate_summaries(language=language,
+                                        lang_pairs="{}-{}".format(language, language),
                                         checkpoint_dir="{}/xlsum/en_XX".format(output_dir))
     save_metrics()
     free_memory()
@@ -52,31 +57,47 @@ for language in languages[1:3]:
     for data_size in [10, 100, 1000, 10000]:
         checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
         train_summarization_model(data_dir="xlsum_{}".format(data_size),
-                                  language=language,
+                                  lang_pairs="{}-{}".format(language, language),
                                   checkpoint="{}/xlsum/en_XX".format(output_dir),
                                   save_dir=checkpoint_dir)
         free_memory()
-        metrics["en_XX_tuned_{}_{}".format(language, data_size)] =\
-            generate_and_evaluate_summaries(language=language, checkpoint_dir=checkpoint_dir)
+        metrics["en_XX_tuned_{}_{}".format(language, data_size)] = \
+            generate_and_evaluate_summaries(language=language,
+                                            lang_pairs="{}-{}".format(language, language),
+                                            checkpoint_dir=checkpoint_dir)
         shutil.rmtree(checkpoint_dir)
         save_metrics()
         free_memory()
 
-
 # tune english model using complete data from spanish and russian datasets
 for language in languages[1:3]:
     checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
-    train_summarization_model(language=language,
+    train_summarization_model(data_dir="xlsum",
+                              lang_pairs="{}-{}".format(language, language),
                               checkpoint="{}/xlsum/en_XX".format(output_dir),
                               save_dir=checkpoint_dir)
     free_memory()
     metrics["en_XX_tuned_{}".format(language)] = \
-        generate_and_evaluate_summaries(language=language, checkpoint_dir=checkpoint_dir)
+        generate_and_evaluate_summaries(language=language,
+                                        lang_pairs="{}-{}".format(language, language),
+                                        checkpoint_dir=checkpoint_dir)
     shutil.rmtree(checkpoint_dir)
     save_metrics()
     free_memory()
 
 # all three languages together
-# add multilingual case here later
+checkpoint_dir = "{}/multilingual".format(output_dir)
+train_summarization_model(data_dir="xlsum",
+                          lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
+                          save_dir=checkpoint_dir)
+free_memory()
+for language in languages:
+    metrics["multilingual_{}".format(language)] = \
+        generate_and_evaluate_summaries(language=language,
+                                        lang_pairs="{}-{}".format(language, language),
+                                        checkpoint_dir=checkpoint_dir)
+    shutil.rmtree(checkpoint_dir)
+    save_metrics()
+    free_memory()
 
 save_metrics()

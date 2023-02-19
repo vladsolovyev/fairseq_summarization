@@ -96,8 +96,8 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         # models.build_model(). This allows multitask type of sub-class can
         # build models other than the input lang_pairs
         self.model_lang_pairs = self.lang_pairs
-        self.source_langs = [d.split("-")[0] for d in self.lang_pairs]
-        self.target_langs = [d.split("-")[1] for d in self.lang_pairs]
+        self.source_langs = ["input_text.{}".format(d.split("-")[0]) for d in self.lang_pairs]
+        self.target_langs = ["summary.{}".format(d.split("-")[1]) for d in self.lang_pairs]
         self.check_dicts(self.dicts, self.source_langs, self.target_langs)
 
         self.sampling_method = SamplingMethod.build_sampler(args, self)

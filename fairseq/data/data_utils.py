@@ -347,11 +347,11 @@ def batch_by_size(
             )
         else:
             b = batch_by_size_vec(
-                indices,
-                num_tokens_vec,
-                max_tokens,
-                max_sentences,
-                bsz_mult,
+                indices.astype(np.int64),
+                num_tokens_vec.astype(np.int64),
+                np.int64(max_tokens),
+                np.int64(max_sentences),
+                np.int32(bsz_mult),
             )
 
         if bsz_mult > 1 and len(b[-1]) % bsz_mult != 0:

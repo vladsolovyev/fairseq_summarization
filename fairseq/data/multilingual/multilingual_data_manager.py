@@ -410,14 +410,14 @@ class MultilingualDatasetManager(object):
                 else []
             )
             src_langs_to_load_dicts = sorted(
-                {p.split("-")[0] for p in (args.lang_pairs + extra_lang_pairs)}
+                {"input_text.{}".format(p.split("-")[0]) for p in (args.lang_pairs + extra_lang_pairs)}
             )
             tgt_langs_to_load_dicts = sorted(
-                {p.split("-")[1] for p in (args.lang_pairs + extra_lang_pairs)}
+                {"summary.{}".format(p.split("-")[1]) for p in (args.lang_pairs + extra_lang_pairs)}
             )
         else:
-            src_langs_to_load_dicts = [args.source_lang]
-            tgt_langs_to_load_dicts = [args.target_lang]
+            src_langs_to_load_dicts = ["input_text.{}".format(args.source_lang)]
+            tgt_langs_to_load_dicts = ["summary.{}".format(args.target_lang)]
 
         paths = utils.split_paths(args.data)
         assert len(paths) > 0
@@ -427,12 +427,7 @@ class MultilingualDatasetManager(object):
                 dicts[lang] = load_dictionary(
                     os.path.join(paths[0], "dict.{}.txt".format(lang))
                 )
-            if len(dicts) > 0:
-                dict0 = next(iter(dicts.values()))
-                assert dicts[lang].pad() == dict0.pad()
-                assert dicts[lang].eos() == dict0.eos()
-                assert dicts[lang].unk() == dict0.unk()
-            logger.info("[{}] dictionary: {} types".format(lang, len(dicts[lang])))
+                logger.info("[{}] dictionary: {} types".format(lang, len(dicts[lang])))
 
         if args.fixed_dictionary is not None:
             fixed_dict = load_dictionary(args.fixed_dictionary)
@@ -451,12 +446,16 @@ class MultilingualDatasetManager(object):
         if self.args.source_dict is not None:
             return self.dicts[SRC_DICT_NAME]
         else:
+            if len(lang.split(".")) == 1:
+                lang = "input_text.{}".format(lang)
             return self.dicts[lang]
 
     def get_target_dictionary(self, lang):
         if self.args.target_dict is not None:
             return self.dicts[TGT_DICT_NAME]
         else:
+            if len(lang.split(".")) == 1:
+                lang = "summary.{}".format(lang)
             return self.dicts[lang]
 
     @classmethod
@@ -482,14 +481,16 @@ class MultilingualDatasetManager(object):
         if spec and spec.startswith("src"):
             if src_lang is None:
                 return None
+            lang = src_lang if len(src_lang.split(".")) == 1 else src_lang.split(".")[1]
             langtok = get_lang_tok(
-                lang=src_lang, lang_tok_style=self.args.lang_tok_style, spec=spec
+                lang=lang, lang_tok_style=self.args.lang_tok_style, spec=spec
             )
         else:
             if tgt_lang is None:
                 return None
+            lang = tgt_lang if len(tgt_lang.split(".")) == 1 else tgt_lang.split(".")[1]
             langtok = get_lang_tok(
-                lang=tgt_lang, lang_tok_style=self.args.lang_tok_style, spec=spec
+                lang=lang, lang_tok_style=self.args.lang_tok_style, spec=spec
             )
         return self.get_langtok_index(
             langtok,
@@ -501,8 +502,9 @@ class MultilingualDatasetManager(object):
     def get_decoder_langtok(self, tgt_lang, spec=None):
         if spec is None:
             return None
+        lang = tgt_lang if len(tgt_lang.split(".")) == 1 else tgt_lang.split(".")[1]
         langtok = get_lang_tok(
-            lang=tgt_lang, lang_tok_style=self.args.lang_tok_style, spec=spec
+            lang=lang, lang_tok_style=self.args.lang_tok_style, spec=spec
         )
         return self.get_langtok_index(langtok, self.get_target_dictionary(tgt_lang))
 
@@ -560,7 +562,7 @@ class MultilingualDatasetManager(object):
                 src_dataset = AppendTokenDataset(
                     TruncateDataset(
                         StripTokenDataset(src_dataset, src_dict.eos()),
-                        max_source_positions - 1,
+                        max_source_positions - 2,
                     ),
                     src_dict.eos(),
                 )
@@ -710,7 +712,7 @@ class MultilingualDatasetManager(object):
             return dataset
         tok = self.get_encoder_langtok(src_lang, tgt_lang, spec)
         if tok:
-            return PrependTokenDataset(dataset, tok)
+            return AppendTokenDataset(dataset, tok)
         return dataset
 
     def tgt_dataset_tranform_func(self, source_lang, target_lang, dataset, spec=None):
@@ -728,7 +730,7 @@ class MultilingualDatasetManager(object):
             return dataset
         tok = self.get_decoder_langtok(target_lang, spec)
         if tok:
-            return PrependTokenDataset(dataset, tok)
+            return AppendTokenDataset(dataset, tok)
         return dataset
 
     def alter_dataset_langtok(
@@ -866,7 +868,8 @@ class MultilingualDatasetManager(object):
 
     def get_data_paths_and_lang_pairs(self, split):
         datapaths = {"main": self.args.data}
-        lang_pairs = {"main": self.lang_pairs}
+        lang_pairs = {"main": ["input_text.{}-summary.{}".format(lang_pair.split("-")[0], lang_pair.split("-")[1])
+                               for lang_pair in self.lang_pairs]}
         if split == getattr(self.args, "train_subset", None):
             # only training data can have extra data and extra language pairs
             if self.args.extra_data:
@@ -892,7 +895,7 @@ class MultilingualDatasetManager(object):
             for f in files:
                 if f.startswith(split) and f.endswith(".idx"):
                     # idx files of the form "{split}.{src}-{tgt}.{lang}.idx"
-                    direction = f.split(".")[-3]
+                    direction = "{}.{}.{}".format(f.split(".")[1], f.split(".")[2], f.split(".")[3])
                     directions.add(direction)
             for direction in directions:
                 shards[direction] += 1
