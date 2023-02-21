@@ -701,6 +701,7 @@ class MultilingualDatasetManager(object):
             align_dataset=align_dataset,
             src_lang_id=src_lang_id,
             tgt_lang_id=tgt_lang_id,
+            eos=self.get_decoder_langtok(tgt, "tgt")
         )
 
     def src_dataset_tranform_func(self, src_lang, tgt_lang, dataset, spec=None):

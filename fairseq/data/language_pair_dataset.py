@@ -26,11 +26,11 @@ def collate(
     if len(samples) == 0:
         return {}
 
-    def merge(key, left_pad, move_eos_to_beginning=False, pad_to_length=None):
+    def merge(key, left_pad, eos_idx=None, move_eos_to_beginning=False, pad_to_length=None):
         return data_utils.collate_tokens(
             [s[key] for s in samples],
             pad_idx,
-            None,
+            eos_idx,
             left_pad,
             move_eos_to_beginning,
             pad_to_length=pad_to_length,
@@ -83,6 +83,7 @@ def collate(
     if samples[0].get("target", None) is not None:
         target = merge(
             "target",
+            eos_idx=eos_idx,
             left_pad=left_pad_target,
             pad_to_length=pad_to_length["target"]
             if pad_to_length is not None
@@ -101,6 +102,7 @@ def collate(
             # previous output token(s) into the next decoder step
             prev_output_tokens = merge(
                 "target",
+                eos_idx=eos_idx,
                 left_pad=left_pad_target,
                 move_eos_to_beginning=True,
                 pad_to_length=pad_to_length["target"]

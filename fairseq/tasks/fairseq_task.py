@@ -374,6 +374,7 @@ class FairseqTask(object):
         self,
         models,
         args,
+        eos=None,
         seq_gen_cls=None,
         extra_gen_cls_kwargs=None,
         prefix_allowed_tokens_fn=None,
@@ -408,6 +409,7 @@ class FairseqTask(object):
             return SequenceScorer(
                 self.target_dictionary,
                 compute_alignment=getattr(args, "print_alignment", False),
+                eos=eos
             )
 
         from fairseq.sequence_generator import (
@@ -498,6 +500,7 @@ class FairseqTask(object):
             match_source_len=getattr(args, "match_source_len", False),
             no_repeat_ngram_size=getattr(args, "no_repeat_ngram_size", 0),
             search_strategy=search_strategy,
+            eos=eos,
             **extra_gen_cls_kwargs,
         )
 
