@@ -8,7 +8,8 @@ from fairseq_cli import train
 def train_summarization_model(save_dir="default",
                               data_dir="xlsum",
                               lang_pairs="en_XX-en_XX",
-                              checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt"):
+                              checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
+                              freeze_embeddings=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -47,6 +48,8 @@ def train_summarization_model(save_dir="default",
          "--batch-size", "32",
          "--lang-tok-style", "mbart"]
     )
+    if freeze_embeddings:
+        sys.argv.append("--freeze-embeddings")
     if torch.cuda.is_available():
         sys.argv.append("--memory-efficient-fp16")
     train.cli_main()

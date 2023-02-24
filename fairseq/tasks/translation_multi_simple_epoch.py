@@ -30,6 +30,14 @@ def get_time_gap(s, e):
     ).__str__()
 
 
+def freeze_embeddings(model):
+    for d in [model.encoder, model.decoder]:
+        for par in d.embed_positions.parameters():
+            par.requires_grad = False
+        for par in d.embed_tokens.parameters():
+            par.requires_grad = False
+    return model
+
 ###
 
 
@@ -72,6 +80,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                             action=FileContentsAction)
         parser.add_argument('--keep-inference-langtok', action='store_true',
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
+        parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings")
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)
@@ -217,7 +226,10 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         )
 
     def build_model(self, args, from_checkpoint=False):
-        return super().build_model(args, from_checkpoint)
+        model = super().build_model(args, from_checkpoint)
+        if args.freeze_embeddings:
+            freeze_embeddings(model)
+        return model
 
     def valid_step(self, sample, model, criterion):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
