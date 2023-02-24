@@ -29,7 +29,11 @@ def generate_and_evaluate_summaries(language="en_XX",
          "--scoring", "rougebert",
          "--batch-size", "64",
          "--num-workers", "16",
-         "--lang-tok-style", "mbart"]
+         "--lang-tok-style", "mbart",
+         "--max-len-b", "84",
+         "--min-len", "20",
+         "--lenpen", "0.8",
+         "--no-repeat-ngram-size", "2"]
     )
     if torch.cuda.is_available():
         sys.argv.append("--memory-efficient-fp16")
@@ -37,3 +41,7 @@ def generate_and_evaluate_summaries(language="en_XX",
     print("Checkpoint: {}, language: {}, results: {}".format(checkpoint_dir, language, results))
     sys.argv = sys.argv[:1]
     return results
+
+
+if __name__ == "__main__":
+    generate_and_evaluate_summaries()

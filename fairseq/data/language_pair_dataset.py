@@ -30,7 +30,7 @@ def collate(
         return data_utils.collate_tokens(
             [s[key] for s in samples],
             pad_idx,
-            None,
+            eos_idx,
             left_pad,
             move_eos_to_beginning,
             pad_to_length=pad_to_length,

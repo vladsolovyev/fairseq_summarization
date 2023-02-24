@@ -51,3 +51,7 @@ def train_summarization_model(save_dir="default",
         sys.argv.append("--memory-efficient-fp16")
     train.cli_main()
     sys.argv = sys.argv[:1]
+
+
+if __name__ == "__main__":
+    train_summarization_model()
