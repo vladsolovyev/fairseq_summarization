@@ -8,6 +8,7 @@ import logging
 import time
 
 import torch
+
 from fairseq.data import (
     FairseqDataset,
     LanguagePairDataset,
@@ -240,33 +241,16 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
     ):
         with torch.no_grad():
             _, tgt_langtok_spec = self.args.langtoks["main"]
-            if not self.args.lang_tok_replacing_bos_eos:
-                if prefix_tokens is None and tgt_langtok_spec:
-                    tgt_lang_tok = self.data_manager.get_decoder_langtok(
-                        self.args.target_lang, tgt_langtok_spec
-                    )
-                    src_tokens = sample["net_input"]["src_tokens"]
-                    bsz = src_tokens.size(0)
-                    prefix_tokens = (
-                        torch.LongTensor([[tgt_lang_tok]]).expand(bsz, 1).to(src_tokens)
-                    )
-                return generator.generate(
-                    models,
-                    sample,
-                    prefix_tokens=prefix_tokens,
-                    constraints=constraints,
+            return generator.generate(
+                models,
+                sample,
+                prefix_tokens=prefix_tokens,
+                bos_token=self.data_manager.get_decoder_langtok(
+                    self.args.target_lang, tgt_langtok_spec
                 )
-            else:
-                return generator.generate(
-                    models,
-                    sample,
-                    prefix_tokens=prefix_tokens,
-                    bos_token=self.data_manager.get_decoder_langtok(
-                        self.args.target_lang, tgt_langtok_spec
-                    )
-                    if tgt_langtok_spec
-                    else self.target_dictionary.eos(),
-                )
+                if tgt_langtok_spec
+                else self.target_dictionary.eos(),
+            )
 
     def reduce_metrics(self, logging_outputs, criterion):
         super().reduce_metrics(logging_outputs, criterion)
