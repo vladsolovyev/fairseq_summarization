@@ -14,6 +14,8 @@ import os
 import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from fairseq.optim.lr_scheduler.polynomial_decay_schedule import PolynomialDecayLRSchedule
+
 # We need to setup root logger before importing any fairseq libraries.
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
@@ -317,7 +319,9 @@ def train(
         ),
     )
     progress.update_config(_flatten_config(cfg))
-
+    if isinstance(trainer.lr_scheduler, PolynomialDecayLRSchedule):
+        trainer.lr_scheduler.cfg.total_num_update = len(progress) // 1.5
+        trainer.lr_scheduler.cfg.warmup_updates = len(progress) // 20
     trainer.begin_epoch(epoch_itr.epoch)
 
     valid_subsets = cfg.dataset.valid_subset.split(",")
