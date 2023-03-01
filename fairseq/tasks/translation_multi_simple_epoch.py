@@ -81,7 +81,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                             action=FileContentsAction)
         parser.add_argument('--keep-inference-langtok', action='store_true',
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
-        parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings")
+        parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings", default=False)
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)
@@ -228,7 +228,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
 
     def build_model(self, args, from_checkpoint=False):
         model = super().build_model(args, from_checkpoint)
-        if args.freeze_embeddings:
+        if self.training and args.freeze_embeddings:
             freeze_embeddings(model)
         return model
 

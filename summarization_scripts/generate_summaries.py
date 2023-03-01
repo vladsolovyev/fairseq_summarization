@@ -31,7 +31,7 @@ def generate_and_evaluate_summaries(language="en_XX",
          "--num-workers", "16",
          "--lang-tok-style", "mbart",
          "--max-len-b", "84",
-         "--min-len", "20",
+         "--min-len", "40",
          "--lenpen", "0.8",
          "--no-repeat-ngram-size", "2"]
     )
