@@ -9,7 +9,7 @@ def train_summarization_model(save_dir="default",
                               data_dir="xlsum",
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
-                              freeze_embeddings=False):
+                              freeze_embeddings=True):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -27,11 +27,10 @@ def train_summarization_model(save_dir="default",
          "--criterion", "label_smoothed_cross_entropy",
          "--label-smoothing", "0.1",
          "--optimizer", "adam",
-         "--adam-eps", "1e-06",
-         "--adam-betas", "(0.9, 0.98)",
+         "--adam-eps", "1e-08",
+         "--adam-betas", "(0.9, 0.999)",
          "--lr-scheduler", "polynomial_decay",
-         "--lr", "3e-05",
-         "--warmup-updates", "2500",
+         "--lr", "2e-05",
          "--total-num-update", "40000",
          "--dropout", "0.2",
          "--attention-dropout", "0.1",
@@ -59,7 +58,7 @@ def train_summarization_model(save_dir="default",
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")
     if torch.cuda.is_available():
-        sys.argv.append("--memory-efficient-fp16")
+        sys.argv.append("--fp16")
     train.cli_main()
     sys.argv = sys.argv[:1]
 
