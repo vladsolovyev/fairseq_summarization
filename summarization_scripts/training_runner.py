@@ -97,10 +97,10 @@ def main():
             generate_and_evaluate_summaries(language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir=checkpoint_dir)
-        shutil.rmtree(checkpoint_dir)
         save_metrics()
         free_memory()
 
+    shutil.rmtree(checkpoint_dir)
     save_metrics()
 
 
