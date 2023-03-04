@@ -8,9 +8,9 @@ from fairseq_cli import generate
 def generate_and_evaluate_summaries(language="en_XX",
                                     lang_pairs="en_XX-en_XX",
                                     checkpoint_dir="default",
-                                    lenpen="1.0",
+                                    lenpen="0.6",
                                     ngram="2",
-                                    min_len="40"):
+                                    min_len="0"):
     sys.argv.extend(
         ["xlsum",
          "--path", "{}/checkpoint_last.pt".format(checkpoint_dir),
