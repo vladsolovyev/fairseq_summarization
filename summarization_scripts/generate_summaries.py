@@ -7,7 +7,10 @@ from fairseq_cli import generate
 
 def generate_and_evaluate_summaries(language="en_XX",
                                     lang_pairs="en_XX-en_XX",
-                                    checkpoint_dir="default"):
+                                    checkpoint_dir="default",
+                                    lenpen="1.0",
+                                    ngram="2",
+                                    min_len="40"):
     sys.argv.extend(
         ["xlsum",
          "--path", "{}/checkpoint_last.pt".format(checkpoint_dir),
@@ -31,9 +34,9 @@ def generate_and_evaluate_summaries(language="en_XX",
          "--num-workers", "16",
          "--lang-tok-style", "mbart",
          "--max-len-b", "84",
-         "--min-len", "40",
-         "--lenpen", "0.8",
-         "--no-repeat-ngram-size", "2"]
+         "--min-len", min_len,
+         "--lenpen", lenpen,
+         "--no-repeat-ngram-size", ngram]
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")
