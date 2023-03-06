@@ -36,7 +36,8 @@ def generate_and_evaluate_summaries(language="en_XX",
          "--max-len-b", "84",
          "--min-len", min_len,
          "--lenpen", lenpen,
-         "--no-repeat-ngram-size", ngram]
+         "--no-repeat-ngram-size", ngram,
+         "--prefix-size", "1"]
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")

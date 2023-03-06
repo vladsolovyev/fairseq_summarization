@@ -562,7 +562,7 @@ class MultilingualDatasetManager(object):
                 src_dataset = AppendTokenDataset(
                     TruncateDataset(
                         StripTokenDataset(src_dataset, src_dict.eos()),
-                        max_source_positions - 2,
+                        max_source_positions - 3,
                     ),
                     src_dict.eos(),
                 )
@@ -779,7 +779,7 @@ class MultilingualDatasetManager(object):
         tgt,
         tgt_dict,
         combine,
-        prepend_bos=False,
+        prepend_bos=True,
         langpairs_sharing_datasets=None,
         data_category=None,
         **extra_kwargs,
