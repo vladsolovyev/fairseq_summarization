@@ -36,7 +36,9 @@ def main():
                                   lang_pairs="{}-{}".format(language, language),
                                   save_dir=checkpoint_dir)
         free_memory()
-        metrics[language] = generate_and_evaluate_summaries(language=language,
+        metrics[language] = generate_and_evaluate_summaries(directory="xlsum",
+                                                            source_language=language,
+                                                            target_language=language,
                                                             lang_pairs="{}-{}".format(language, language),
                                                             checkpoint_dir=checkpoint_dir)
         if language != "en_XX":
@@ -47,7 +49,9 @@ def main():
     # zero shot. Evaluate spanish and russian datasets using english model
     for language in languages[1:3]:
         metrics["en_XX_zero_{}".format(language)] = \
-            generate_and_evaluate_summaries(language=language,
+            generate_and_evaluate_summaries(directory="xlsum",
+                                            source_language=language,
+                                            target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir="{}/xlsum/en_XX".format(output_dir))
         save_metrics()
@@ -63,7 +67,9 @@ def main():
                                       save_dir=checkpoint_dir)
             free_memory()
             metrics["en_XX_tuned_{}_{}".format(language, data_size)] = \
-                generate_and_evaluate_summaries(language=language,
+                generate_and_evaluate_summaries(directory="xlsum",
+                                                source_language=language,
+                                                target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
                                                 checkpoint_dir=checkpoint_dir)
             shutil.rmtree(checkpoint_dir)
@@ -72,14 +78,16 @@ def main():
 
     # tune english model using complete data from spanish and russian datasets
     for language in languages[1:3]:
-        checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
+        checkpoint_dir = "{}/xlsum_all/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs="{}-{}".format(language, language),
                                   checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                   save_dir=checkpoint_dir)
         free_memory()
         metrics["en_XX_tuned_{}".format(language)] = \
-            generate_and_evaluate_summaries(language=language,
+            generate_and_evaluate_summaries(directory="xlsum",
+                                            source_language=language,
+                                            target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir=checkpoint_dir)
         shutil.rmtree(checkpoint_dir)
@@ -94,7 +102,9 @@ def main():
     free_memory()
     for language in languages:
         metrics["multilingual_{}".format(language)] = \
-            generate_and_evaluate_summaries(language=language,
+            generate_and_evaluate_summaries(directory="xlsum",
+                                            source_language=language,
+                                            target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir=checkpoint_dir)
         save_metrics()

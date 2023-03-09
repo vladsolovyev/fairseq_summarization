@@ -5,8 +5,8 @@ import torch
 from fairseq_cli import train
 
 
-def train_summarization_model(save_dir="default",
-                              data_dir="xlsum",
+def train_summarization_model(data_dir,
+                              save_dir="default",
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_embeddings=False):
