@@ -3,6 +3,8 @@ from pathlib import Path
 from datasets import load_dataset
 from sentencepiece import SentencePieceProcessor
 
+from summarization_datasets.utils import write_to_file
+
 data_types = ["train", "test"]
 columns = ["source", "target"]
 new_columns = ["input_text", "summary"]
@@ -16,15 +18,11 @@ datasets_crosslingual = [load_dataset("GEM/wiki_lingua", name="es_en", cache_dir
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
-def write_to_file(lines, file):
-    with open(file, "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write("{}\n".format(line))
-
-
 def main():
     for language, dataset in zip(crosslingual_source_languages, datasets_crosslingual):
         for data_type in data_types:
+            dataset[data_type] = dataset[data_type].\
+                filter(lambda sample: sample["target_language"] == "en" and sample["source_language"] != "en")
             for column, new_column in zip(columns, new_columns):
                 lang = language if column == "source" else "en_XX"
                 encoded_texts = [" ".join(encoded_parts) for encoded_parts in

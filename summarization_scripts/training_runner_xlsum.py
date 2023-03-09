@@ -1,31 +1,14 @@
-import gc
 import shutil
 from datetime import datetime
 
-import pandas as pd
-import torch
-from GPUtil import showUtilization
-
 from summarization_scripts.generate_summaries import generate_and_evaluate_summaries
 from summarization_scripts.train_summarization import train_summarization_model
+from summarization_scripts.utils import free_memory, save_metrics
 
 languages = ["en_XX", "es_XX", "ru_RU"]
 metrics = dict()
 
 output_dir = datetime.today().strftime('%Y-%m-%d')
-
-
-def save_metrics():
-    metrics_df = pd.DataFrame.from_dict(metrics, orient='index')
-    metrics_df.to_csv("{}/metrics.csv".format(output_dir))
-
-
-def free_memory():
-    showUtilization()
-    gc.collect()
-    torch.cuda.empty_cache()
-    gc.collect()
-    showUtilization()
 
 
 def main():
@@ -43,22 +26,22 @@ def main():
                                                             checkpoint_dir=checkpoint_dir)
         if language != "en_XX":
             shutil.rmtree(checkpoint_dir)
-        save_metrics()
+        save_metrics(metrics, output_dir)
         free_memory()
 
     # zero shot. Evaluate spanish and russian datasets using english model
-    for language in languages[1:3]:
-        metrics["en_XX_zero_{}".format(language)] = \
+    for language in languages[1:]:
+        metrics["{}_zero".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir="{}/xlsum/en_XX".format(output_dir))
-        save_metrics()
+        save_metrics(metrics, output_dir)
         free_memory()
 
     # few shot experiments. Tune english model using few data from spanish and russian datasets
-    for language in languages[1:3]:
+    for language in languages[1:]:
         for data_size in [10, 100, 1000, 10000]:
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
             train_summarization_model(data_dir="xlsum_{}".format(data_size),
@@ -66,32 +49,32 @@ def main():
                                       checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                       save_dir=checkpoint_dir)
             free_memory()
-            metrics["en_XX_tuned_{}_{}".format(language, data_size)] = \
+            metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
                                                 source_language=language,
                                                 target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
                                                 checkpoint_dir=checkpoint_dir)
             shutil.rmtree(checkpoint_dir)
-            save_metrics()
+            save_metrics(metrics, output_dir)
             free_memory()
 
     # tune english model using complete data from spanish and russian datasets
-    for language in languages[1:3]:
+    for language in languages[1:]:
         checkpoint_dir = "{}/xlsum_all/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs="{}-{}".format(language, language),
                                   checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                   save_dir=checkpoint_dir)
         free_memory()
-        metrics["en_XX_tuned_{}".format(language)] = \
+        metrics["{}_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir=checkpoint_dir)
         shutil.rmtree(checkpoint_dir)
-        save_metrics()
+        save_metrics(metrics, output_dir)
         free_memory()
 
     # all three languages together
@@ -101,17 +84,17 @@ def main():
                               save_dir=checkpoint_dir)
     free_memory()
     for language in languages:
-        metrics["multilingual_{}".format(language)] = \
+        metrics["{}_multilingual".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint_dir=checkpoint_dir)
-        save_metrics()
+        save_metrics(metrics, output_dir)
         free_memory()
 
     shutil.rmtree(checkpoint_dir)
-    save_metrics()
+    shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
 
 
 if __name__ == "__main__":

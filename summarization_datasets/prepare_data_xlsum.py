@@ -3,6 +3,8 @@ from pathlib import Path
 from datasets import load_dataset
 from sentencepiece import SentencePieceProcessor
 
+from summarization_datasets.utils import write_to_file
+
 data_types = ["train", "test"]
 columns = ["text", "target"]
 new_columns = ["input_text", "summary"]
@@ -15,15 +17,8 @@ spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 def filter_datasets():
     for dataset in datasets:
-        for data_type in data_types:
-            dataset[data_type] = dataset[data_type].filter(
-                lambda sample: len(sample["text"].split()) > 20 and len(sample["target"].split()) > 10)
-
-
-def write_to_file(lines, file):
-    with open(file, "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write("{}\n".format(line))
+        dataset["train"] = dataset["train"].filter(
+            lambda sample: len(sample["text"].split()) > 20 and len(sample["target"].split()) > 10)
 
 
 def main():
