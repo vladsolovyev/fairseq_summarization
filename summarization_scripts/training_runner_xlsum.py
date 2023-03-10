@@ -6,7 +6,7 @@ from summarization_scripts.train_summarization import train_summarization_model
 from summarization_scripts.utils import free_memory, save_metrics
 
 languages = ["en_XX", "es_XX", "ru_RU"]
-lenpen = 0.6
+lenpen = "0.6"
 
 
 def main():
