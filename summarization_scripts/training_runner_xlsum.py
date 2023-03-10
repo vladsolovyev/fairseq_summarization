@@ -6,12 +6,12 @@ from summarization_scripts.train_summarization import train_summarization_model
 from summarization_scripts.utils import free_memory, save_metrics
 
 languages = ["en_XX", "es_XX", "ru_RU"]
-metrics = dict()
-
-output_dir = datetime.today().strftime('%Y-%m-%d')
+lenpen = 0.6
 
 
 def main():
+    metrics = dict()
+    output_dir = datetime.today().strftime('%Y-%m-%d')
     # every language separately
     for language in languages:
         checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
@@ -23,7 +23,8 @@ def main():
                                                             source_language=language,
                                                             target_language=language,
                                                             lang_pairs="{}-{}".format(language, language),
-                                                            checkpoint_dir=checkpoint_dir)
+                                                            checkpoint_dir=checkpoint_dir,
+                                                            lenpen=lenpen)
         if language != "en_XX":
             shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
@@ -36,7 +37,8 @@ def main():
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
-                                            checkpoint_dir="{}/xlsum/en_XX".format(output_dir))
+                                            checkpoint_dir="{}/xlsum/en_XX".format(output_dir),
+                                            lenpen=lenpen)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -54,7 +56,8 @@ def main():
                                                 source_language=language,
                                                 target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
-                                                checkpoint_dir=checkpoint_dir)
+                                                checkpoint_dir=checkpoint_dir,
+                                                lenpen=lenpen)
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
@@ -72,7 +75,8 @@ def main():
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
-                                            checkpoint_dir=checkpoint_dir)
+                                            checkpoint_dir=checkpoint_dir,
+                                            lenpen=lenpen)
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
         free_memory()
@@ -89,7 +93,8 @@ def main():
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
-                                            checkpoint_dir=checkpoint_dir)
+                                            checkpoint_dir=checkpoint_dir,
+                                            lenpen=lenpen)
         save_metrics(metrics, output_dir)
         free_memory()
 

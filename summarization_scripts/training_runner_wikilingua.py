@@ -6,12 +6,12 @@ from summarization_scripts.train_summarization import train_summarization_model
 from summarization_scripts.utils import free_memory, save_metrics
 
 languages = ["en_XX", "es_XX", "ru_RU"]
-metrics = dict()
-
-output_dir = datetime.today().strftime('%Y-%m-%d')
+lenpen = 1.0
 
 
 def main():
+    metrics = dict()
+    output_dir = datetime.today().strftime('%Y-%m-%d')
     # two crosslingual cases separately
     for language in languages[1:]:
         checkpoint_dir = "{}/wikilingua/{}-en_XX".format(output_dir, language)
@@ -24,7 +24,8 @@ def main():
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir)
+                                            checkpoint_dir=checkpoint_dir,
+                                            lenpen=lenpen)
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
         free_memory()
@@ -41,7 +42,8 @@ def main():
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir)
+                                            checkpoint_dir=checkpoint_dir,
+                                            lenpen=lenpen)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -60,14 +62,15 @@ def main():
                                                 source_language=language,
                                                 target_language="en_XX",
                                                 lang_pairs="{}-en_XX".format(language),
-                                                checkpoint_dir=checkpoint_dir)
+                                                checkpoint_dir=checkpoint_dir,
+                                                lenpen=lenpen)
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
 
     # tune multilingual model using complete data from spanish-english and russian-english datasets
     for language in languages[1:]:
-        checkpoint_dir = "{}/wikilingua_all/{}-en_XX".format(output_dir, data_size, language)
+        checkpoint_dir = "{}/wikilingua_all/{}-en_XX".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua_cross_{}-en_XX".format(language),
                                   lang_pairs="{}-en_XX".format(language),
                                   checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
@@ -78,9 +81,10 @@ def main():
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir)
+                                            checkpoint_dir=checkpoint_dir,
+                                            lenpen=lenpen)
         shutil.rmtree(checkpoint_dir)
-        save_metrics()
+        save_metrics(metrics, output_dir)
         free_memory()
 
     shutil.rmtree("{}/multilingual".format(output_dir))
