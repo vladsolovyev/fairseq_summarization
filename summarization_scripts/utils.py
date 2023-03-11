@@ -11,16 +11,16 @@ DATA = "../summarization_datasets/"
 DICT = "{}mbart.cc25.v2/dict.txt".format(DATA)
 
 
-def preprocess_data(source_language, target_language, directory, add_test_data=False):
+def preprocess_data(source_language, target_language, src_directory, dst_directory, add_test_data=False):
     sys.argv.extend(["--source-lang", "input_text.{}".format(source_language),
                      "--target-lang", "summary.{}".format(target_language),
-                     "--trainpref", "{}/{}/train".format(DATA, directory),
-                     "--destdir", directory,
+                     "--trainpref", "{}/{}/train".format(DATA, src_directory),
+                     "--destdir", dst_directory,
                      "--srcdict", DICT,
                      "--tgtdict", DICT,
                      "--workers", "20"])
     if add_test_data:
-        sys.argv.extend(["--testpref", "{}/{}/test".format(DATA, directory)])
+        sys.argv.extend(["--testpref", "{}/{}/test".format(DATA, src_directory)])
     preprocess.cli_main()
     sys.argv = sys.argv[:1]
 

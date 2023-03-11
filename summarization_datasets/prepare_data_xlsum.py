@@ -9,9 +9,9 @@ data_types = ["train", "test"]
 columns = ["text", "target"]
 new_columns = ["input_text", "summary"]
 languages = ["en_XX", "es_XX", "ru_RU"]
-datasets = [load_dataset("GEM/xlsum", "english"),
-            load_dataset("GEM/xlsum", "spanish"),
-            load_dataset("GEM/xlsum", "russian")]
+datasets = [load_dataset("GEM/xlsum", "english", cache_dir="./cache"),
+            load_dataset("GEM/xlsum", "spanish", cache_dir="./cache"),
+            load_dataset("GEM/xlsum", "russian", cache_dir="./cache")]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
