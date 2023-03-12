@@ -90,7 +90,7 @@ def main():
     # tune multilingual model using complete data from spanish-english and russian-english datasets together
     checkpoint_dir = "{}/wikilingua_all_together".format(output_dir)
     train_summarization_model(data_dir="wikilingua_cross",
-                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[1:]]),
+                              lang_pairs=",".join(["{}-en_XX".format(language) for language in languages[1:]]),
                               checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
                               save_dir=checkpoint_dir)
     free_memory()
