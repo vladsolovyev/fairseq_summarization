@@ -8,13 +8,17 @@ from summarization_datasets.utils import write_to_file
 data_types = ["train", "test"]
 columns = ["source", "target"]
 new_columns = ["input_text", "summary"]
-mono_languages = ["en_XX", "es_XX", "ru_RU"]
-crosslingual_source_languages = ["es_XX", "ru_RU"]
+mono_languages = ["en_XX", "es_XX", "ru_RU", "tr_TR", "vi_VN"]
+crosslingual_source_languages = ["es_XX", "ru_RU", "tr_TR", "vi_VN"]
 datasets_monolingual = [load_dataset("GEM/wiki_lingua", "en", cache_dir="./cache"),
                         load_dataset("GEM/wiki_lingua", "es", cache_dir="./cache"),
-                        load_dataset("GEM/wiki_lingua", "ru", cache_dir="./cache")]
+                        load_dataset("GEM/wiki_lingua", "ru", cache_dir="./cache"),
+                        load_dataset("GEM/wiki_lingua", "tr", cache_dir="./cache"),
+                        load_dataset("GEM/wiki_lingua", "vi", cache_dir="./cache")]
 datasets_crosslingual = [load_dataset("GEM/wiki_lingua", name="es_en", cache_dir="./cache"),
-                         load_dataset("GEM/wiki_lingua", name="ru_en", cache_dir="./cache")]
+                         load_dataset("GEM/wiki_lingua", name="ru_en", cache_dir="./cache"),
+                         load_dataset("GEM/wiki_lingua", name="tr_en", cache_dir="./cache"),
+                         load_dataset("GEM/wiki_lingua", name="vi_en", cache_dir="./cache")]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
