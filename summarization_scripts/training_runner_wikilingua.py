@@ -32,7 +32,7 @@ def main():
         free_memory()
     shutil.rmtree(checkpoint_dir)
 
-    # two crosslingual cases separately
+    # four crosslingual cases separately
     for language in languages[1:]:
         checkpoint_dir = "{}/wikilingua/{}-en_XX".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua_cross",
@@ -50,7 +50,7 @@ def main():
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # all three languages together, but monolingual data
+    # all five languages together, but monolingual data
     checkpoint_dir = "{}/multilingual".format(output_dir)
     train_summarization_model(data_dir="wikilingua_mono",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
@@ -68,7 +68,8 @@ def main():
         free_memory()
 
     # few shot experiments.
-    # Tune multilingual model using few data from spanish-english and russian-english datasets
+    # Tune multilingual model using few data from spanish-english, russian-english,
+    # turkish-english and vietnamese-english datasets
     for language in languages[1:]:
         for data_size in [10, 100, 1000, 10000]:
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
