@@ -36,6 +36,7 @@ class RougeBertScoreScorer(BaseScorer):
         return f"BERTScore: {self.rouge_and_bert_score()}"
 
     def rouge_and_bert_score(self):
+        print("number of samples: {}".format(len(self.pred)))
         rouge_result = evaluate.load("rouge").compute(predictions=self.pred,
                                                       references=self.ref,
                                                       tokenizer=MultilingualTokenizer(language=self.cfg.lang,
