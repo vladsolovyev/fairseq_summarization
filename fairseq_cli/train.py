@@ -320,8 +320,8 @@ def train(
     )
     progress.update_config(_flatten_config(cfg))
     if isinstance(trainer.lr_scheduler, PolynomialDecayLRSchedule):
-        trainer.lr_scheduler.cfg.total_num_update = len(progress)
-        trainer.lr_scheduler.total_num_update = len(progress)
+        trainer.lr_scheduler.cfg.total_num_update = len(progress) * cfg.optimization.max_epoch
+        trainer.lr_scheduler.total_num_update = len(progress) * cfg.optimization.max_epoch
     trainer.begin_epoch(epoch_itr.epoch)
 
     valid_subsets = cfg.dataset.valid_subset.split(",")
