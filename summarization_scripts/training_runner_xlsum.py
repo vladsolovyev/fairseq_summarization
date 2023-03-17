@@ -11,7 +11,7 @@ lenpen = "0.6"
 
 def main():
     metrics = dict()
-    output_dir = datetime.today().strftime('%Y-%m-%d')
+    output_dir = "{}_xlsum".format(datetime.today().strftime('%Y-%m-%d'))
     # every language separately
     for language in languages:
         checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
