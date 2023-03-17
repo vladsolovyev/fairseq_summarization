@@ -48,7 +48,7 @@ def main():
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
             train_summarization_model(data_dir="xlsum_{}".format(data_size),
                                       lang_pairs="{}-{}".format(language, language),
-                                      checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
+                                      checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
                                       save_dir=checkpoint_dir)
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
@@ -67,7 +67,7 @@ def main():
         checkpoint_dir = "{}/xlsum_all/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs="{}-{}".format(language, language),
-                                  checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
+                                  checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir)
         free_memory()
         metrics["{}_tuned_all".format(language)] = \
