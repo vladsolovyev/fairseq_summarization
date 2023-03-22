@@ -320,7 +320,9 @@ def train(
     )
     progress.update_config(_flatten_config(cfg))
     if isinstance(trainer.lr_scheduler, PolynomialDecayLRSchedule):
-        total_num_update = min(trainer.lr_scheduler.total_num_update, len(progress) * cfg.optimization.max_epoch)
+        total_num_update = min(trainer.lr_scheduler.total_num_update,
+                               len(progress) * cfg.optimization.max_epoch,
+                               cfg.optimization.max_update)
         trainer.lr_scheduler.cfg.total_num_update = total_num_update
         trainer.lr_scheduler.total_num_update = total_num_update
     trainer.begin_epoch(epoch_itr.epoch)
