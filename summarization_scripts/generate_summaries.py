@@ -15,7 +15,7 @@ def generate_and_evaluate_summaries(directory,
                                     min_len="0"):
     sys.argv.extend(
         [directory,
-         "--path", "{}/checkpoint_last.pt".format(checkpoint_dir),
+         "--path", "{}/checkpoint_best.pt".format(checkpoint_dir),
          "--task", "translation_multi_simple_epoch",
          "--gen-subset", "test",
          "--encoder-langtok", "src",

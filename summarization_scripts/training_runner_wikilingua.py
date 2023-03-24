@@ -58,7 +58,7 @@ def main():
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
             train_summarization_model(data_dir="wikilingua_cross_{}".format(data_size),
                                       lang_pairs="{}-en_XX".format(language),
-                                      checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                                      checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                                       save_dir=checkpoint_dir)
             free_memory()
             metrics["{}-en_XX_tuned_{}".format(language, data_size)] = \
@@ -78,7 +78,7 @@ def main():
         checkpoint_dir = "{}/wikilingua_all/{}-en_XX".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua_cross",
                                   lang_pairs="{}-en_XX".format(language),
-                                  checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                                  checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir)
         free_memory()
         metrics["{}-en_XX_tuned_all".format(language)] = \
@@ -97,7 +97,7 @@ def main():
     checkpoint_dir = "{}/wikilingua_all_together".format(output_dir)
     train_summarization_model(data_dir="wikilingua_cross",
                               lang_pairs=",".join(["{}-en_XX".format(language) for language in languages[1:]]),
-                              checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                              checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir)
     free_memory()
     for language in languages[1:]:
