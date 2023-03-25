@@ -193,6 +193,7 @@ def main(cfg: FairseqConfig) -> None:
     # TODO: end of dry run section
 
     setattr(should_stop_early, "best", None)
+    setattr(checkpoint_utils.save_checkpoint, "best", None)
     train_meter = meters.StopwatchMeter()
     train_meter.start()
     while epoch_itr.next_epoch_idx <= max_epoch:
