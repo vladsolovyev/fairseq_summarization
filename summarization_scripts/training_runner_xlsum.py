@@ -23,7 +23,7 @@ def main():
                                                             source_language=language,
                                                             target_language=language,
                                                             lang_pairs="{}-{}".format(language, language),
-                                                            checkpoint_dir=checkpoint_dir,
+                                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                                             lenpen=lenpen)
         if language != "en_XX":
             shutil.rmtree(checkpoint_dir)
@@ -48,8 +48,9 @@ def main():
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
             train_summarization_model(data_dir="xlsum_{}".format(data_size),
                                       lang_pairs="{}-{}".format(language, language),
-                                      checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
-                                      save_dir=checkpoint_dir)
+                                      checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
+                                      save_dir=checkpoint_dir,
+                                      max_epoch="5")
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
@@ -67,7 +68,7 @@ def main():
         checkpoint_dir = "{}/xlsum_all/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs="{}-{}".format(language, language),
-                                  checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
+                                  checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                   save_dir=checkpoint_dir)
         free_memory()
         metrics["{}_tuned_all".format(language)] = \
@@ -93,7 +94,7 @@ def main():
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
-                                            checkpoint_dir=checkpoint_dir,
+                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                             lenpen=lenpen)
         save_metrics(metrics, output_dir)
         free_memory()

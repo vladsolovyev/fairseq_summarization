@@ -9,13 +9,13 @@ def generate_and_evaluate_summaries(directory,
                                     source_language="en_XX",
                                     target_language="en_XX",
                                     lang_pairs="en_XX-en_XX",
-                                    checkpoint_dir="default",
+                                    checkpoint=None,
                                     lenpen="0.6",
                                     ngram="2",
                                     min_len="0"):
     sys.argv.extend(
         [directory,
-         "--path", "{}/checkpoint_best.pt".format(checkpoint_dir),
+         "--path", checkpoint,
          "--task", "translation_multi_simple_epoch",
          "--gen-subset", "test",
          "--encoder-langtok", "src",
@@ -25,7 +25,7 @@ def generate_and_evaluate_summaries(directory,
          "--lang-pairs", lang_pairs,
          "--source-lang", source_language,
          "--target-lang", target_language,
-         "--max-tokens", "10000",
+         "--max-tokens", "20000",
          "--truncate-source",
          "--beam", "5",
          "--bpe", "sentencepiece",
@@ -44,7 +44,7 @@ def generate_and_evaluate_summaries(directory,
         sys.argv.append("--fp16")
     results = generate.cli_main().scores
     print("Checkpoint: {}, languages: {}-{}, results: {}".format(
-        checkpoint_dir, source_language, target_language, results))
+        checkpoint, source_language, target_language, results))
     sys.argv = sys.argv[:1]
     return results
 

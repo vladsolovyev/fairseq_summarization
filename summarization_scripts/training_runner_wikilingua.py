@@ -19,14 +19,17 @@ def main():
         checkpoint_dir = "{}/wikilingua/{}-en_XX".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua_cross",
                                   lang_pairs="{}-en_XX".format(language),
-                                  save_dir=checkpoint_dir)
+                                  save_dir=checkpoint_dir,
+                                  max_epoch="15",
+                                  validate=True)
         free_memory()
+
         metrics["{}-en_XX".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua_cross",
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir,
+                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len)
         shutil.rmtree(checkpoint_dir)
@@ -37,7 +40,8 @@ def main():
     checkpoint_dir = "{}/multilingual".format(output_dir)
     train_summarization_model(data_dir="wikilingua_mono",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
-                              save_dir=checkpoint_dir)
+                              save_dir=checkpoint_dir,
+                              max_epoch="5")
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_zero".format(language)] = \
@@ -45,7 +49,7 @@ def main():
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir,
+                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len)
         save_metrics(metrics, output_dir)
@@ -58,15 +62,16 @@ def main():
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
             train_summarization_model(data_dir="wikilingua_cross_{}".format(data_size),
                                       lang_pairs="{}-en_XX".format(language),
-                                      checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
-                                      save_dir=checkpoint_dir)
+                                      checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                                      save_dir=checkpoint_dir,
+                                      max_epoch="10")
             free_memory()
             metrics["{}-en_XX_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="wikilingua_cross",
                                                 source_language=language,
                                                 target_language="en_XX",
                                                 lang_pairs="{}-en_XX".format(language),
-                                                checkpoint_dir=checkpoint_dir,
+                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                                 lenpen=lenpen,
                                                 min_len=min_len)
             shutil.rmtree(checkpoint_dir)
@@ -78,15 +83,17 @@ def main():
         checkpoint_dir = "{}/wikilingua_all/{}-en_XX".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua_cross",
                                   lang_pairs="{}-en_XX".format(language),
-                                  checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
-                                  save_dir=checkpoint_dir)
+                                  checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                                  save_dir=checkpoint_dir,
+                                  max_epoch="15",
+                                  validate=True)
         free_memory()
         metrics["{}-en_XX_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua_cross",
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir,
+                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len)
         shutil.rmtree(checkpoint_dir)
@@ -97,8 +104,10 @@ def main():
     checkpoint_dir = "{}/wikilingua_all_together".format(output_dir)
     train_summarization_model(data_dir="wikilingua_cross",
                               lang_pairs=",".join(["{}-en_XX".format(language) for language in languages[1:]]),
-                              checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
-                              save_dir=checkpoint_dir)
+                              checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                              save_dir=checkpoint_dir,
+                              max_epoch="15",
+                              validate=True)
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_tuned_all_together".format(language)] = \
@@ -106,7 +115,7 @@ def main():
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint_dir=checkpoint_dir,
+                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len)
         save_metrics(metrics, output_dir)

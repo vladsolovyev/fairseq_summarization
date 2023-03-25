@@ -9,7 +9,9 @@ def train_summarization_model(data_dir,
                               save_dir="default",
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
-                              freeze_embeddings=False):
+                              freeze_embeddings=False,
+                              max_epoch="1",
+                              validate=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -30,15 +32,11 @@ def train_summarization_model(data_dir,
          "--adam-betas", "(0.9, 0.999)",
          "--lr-scheduler", "polynomial_decay",
          "--lr", "2e-05",
-         "--power", "5",
+         "--power", "1",
          "--end-learning-rate", "5e-10",
          "--total-num-update", "60000",
          "--weight-decay", "0.01",
          "--max-tokens", "3500",
-         "--keep-best-checkpoints", "1",
-         "--no-epoch-checkpoints",
-         "--no-last-checkpoints",
-         "--patience", "2",
          "--save-dir", save_dir,
          "--seed", "222",
          "--log-format", "simple",
@@ -47,7 +45,7 @@ def train_summarization_model(data_dir,
          "--reset-meters",
          "--reset-dataloader",
          "--reset-lr-scheduler",
-         "--max-epoch", "15",
+         "--max-epoch", max_epoch,
          "--truncate-source",
          "--lang-tok-style", "mbart",
          "--num-workers", "16",
@@ -55,6 +53,13 @@ def train_summarization_model(data_dir,
          "--ddp-backend", "no_c10d",
          "--find-unused-parameters"]
     )
+    if validate:
+        sys.argv.extend(["--keep-best-checkpoints", "1",
+                         "--no-epoch-checkpoints",
+                         "--no-last-checkpoints",
+                         "--patience", "2"])
+    else:
+        sys.argv.append("--disable-validation")
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")
     if torch.cuda.is_available():
