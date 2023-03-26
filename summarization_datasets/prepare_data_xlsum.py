@@ -10,10 +10,11 @@ from summarization_datasets.utils import write_to_file
 data_types = ["train", "test"]
 columns = ["text", "target"]
 new_columns = ["input_text", "summary"]
-languages = ["en_XX", "es_XX", "ru_RU"]
+languages = ["en_XX", "es_XX", "ru_RU", "my_MM"]
 datasets = [load_dataset("GEM/xlsum", "english", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "spanish", cache_dir="./cache"),
-            load_dataset("GEM/xlsum", "russian", cache_dir="./cache")]
+            load_dataset("GEM/xlsum", "russian", cache_dir="./cache"),
+            load_dataset("GEM/xlsum", "burmese", cache_dir="./cache")]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
@@ -40,6 +41,8 @@ def main():
                 if data_type == "train":
                     Path("xlsum").mkdir(exist_ok=True)
                     for data_size in [10, 100, 1000, 10000]:
+                        if len(encoded_texts) < data_size:
+                            break
                         output_dir = "xlsum_{}".format(data_size)
                         Path(output_dir).mkdir(exist_ok=True)
                         write_to_file(encoded_texts[:data_size],

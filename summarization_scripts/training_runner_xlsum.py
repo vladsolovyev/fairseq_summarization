@@ -5,7 +5,7 @@ from summarization_scripts.generate_summaries import generate_and_evaluate_summa
 from summarization_scripts.train_summarization import train_summarization_model
 from summarization_scripts.utils import free_memory, save_metrics
 
-languages = ["en_XX", "es_XX", "ru_RU"]
+languages = ["en_XX", "es_XX", "ru_RU", "my_MM"]
 lenpen = "0.6"
 
 
@@ -30,21 +30,23 @@ def main():
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # zero shot. Evaluate spanish and russian datasets using english model
+    # zero shot. Evaluate spanish, russian and burmese datasets using english model
     for language in languages[1:]:
         metrics["{}_zero".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
-                                            checkpoint_dir="{}/xlsum/en_XX".format(output_dir),
+                                            checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                             lenpen=lenpen)
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # few shot experiments. Tune english model using few data from spanish and russian datasets
+    # few shot experiments. Tune english model using few data from spanish, russian and burmese datasets
     for language in languages[1:]:
         for data_size in [10, 100, 1000, 10000]:
+            if language == "my_MM" and data_size == 10000:
+                break
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
             train_summarization_model(data_dir="xlsum_{}".format(data_size),
                                       lang_pairs="{}-{}".format(language, language),
@@ -57,13 +59,13 @@ def main():
                                                 source_language=language,
                                                 target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
-                                                checkpoint_dir=checkpoint_dir,
+                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                                 lenpen=lenpen)
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
 
-    # tune english model using complete data from spanish and russian datasets
+    # tune english model using complete data from spanish, russian and burmese datasets
     for language in languages[1:]:
         checkpoint_dir = "{}/xlsum_all/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
@@ -76,16 +78,16 @@ def main():
                                             source_language=language,
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
-                                            checkpoint_dir=checkpoint_dir,
+                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                             lenpen=lenpen)
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # all three languages together
+    # train using english, spanish and russian together and evaluate with all 4 languages
     checkpoint_dir = "{}/multilingual".format(output_dir)
     train_summarization_model(data_dir="xlsum",
-                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
+                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
                               save_dir=checkpoint_dir)
     free_memory()
     for language in languages:
@@ -99,8 +101,26 @@ def main():
         save_metrics(metrics, output_dir)
         free_memory()
 
+    # tune multilingual model and evaluate it using burmese dataset
+    checkpoint_dir = "{}/multilingual_tuned_burmese".format(output_dir)
+    train_summarization_model(data_dir="xlsum",
+                              lang_pairs="my_MM-my_MM",
+                              checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
+                              save_dir=checkpoint_dir)
+    free_memory()
+    metrics["my_MM_multilingual_tuned_burmese"] = \
+        generate_and_evaluate_summaries(directory="xlsum",
+                                        source_language="my_MM",
+                                        target_language="my_MM",
+                                        lang_pairs="my_MM-my_MM",
+                                        checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                        lenpen=lenpen)
+    save_metrics(metrics, output_dir)
+    free_memory()
+
     shutil.rmtree(checkpoint_dir)
     shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
+    shutil.rmtree("{}/multilingual".format(output_dir))
 
 
 if __name__ == "__main__":
