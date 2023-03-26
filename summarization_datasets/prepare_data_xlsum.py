@@ -7,7 +7,7 @@ from sentencepiece import SentencePieceProcessor
 
 from summarization_datasets.utils import write_to_file
 
-data_types = ["train", "test", "validation"]
+data_types = ["train", "test"]
 columns = ["text", "target"]
 new_columns = ["input_text", "summary"]
 languages = ["en_XX", "es_XX", "ru_RU"]

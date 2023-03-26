@@ -12,7 +12,8 @@ def main():
                         "en_XX",
                         "wikilingua_cross_{}-en_XX".format(language),
                         "wikilingua_cross",
-                        add_test_and_validation_data=True)
+                        add_test_data=True,
+                        add_validation_data=True)
     for language in ["en_XX", "es_XX", "ru_RU"]:
         preprocess_data(language, language, "wikilingua_mono", "wikilingua_mono")
 
