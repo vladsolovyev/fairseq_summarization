@@ -33,9 +33,11 @@ def train_summarization_model(data_dir,
          "--lr-scheduler", "polynomial_decay",
          "--lr", "2e-05",
          "--power", "3",
-         "--end-learning-rate", "1e-10",
-         "--total-num-update", "60000",
+         "--end-learning-rate", "5e-10",
+         "--total-num-update", "70000",
          "--weight-decay", "0.01",
+         "--dropout", "0.3",
+         "--attention-dropout", "0.1",
          "--max-tokens", "3500",
          "--save-dir", save_dir,
          "--seed", "222",
@@ -57,7 +59,7 @@ def train_summarization_model(data_dir,
         sys.argv.extend(["--keep-best-checkpoints", "1",
                          "--no-epoch-checkpoints",
                          "--no-last-checkpoints",
-                         "--patience", "3"])
+                         "--patience", "2"])
     else:
         sys.argv.append("--disable-validation")
     if freeze_embeddings:
