@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from datasets import load_dataset
+from easynmt import EasyNMT
 from sentencepiece import SentencePieceProcessor
 
 from summarization_datasets.utils import write_to_file
@@ -16,6 +17,24 @@ datasets = [load_dataset("GEM/xlsum", "english", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "russian", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "burmese", cache_dir="./cache")]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
+translation_model = EasyNMT("mbart50_m2en")
+
+
+def create_translated_data(dataset, source_lang):
+    directory = "xlsum_{}_en".format(source_lang)
+    Path(directory).mkdir(exist_ok=True)
+    translated_input_text = translation_model.translate(dataset["test"]["text"],
+                                                        source_lang=source_lang,
+                                                        target_lang="en",
+                                                        show_progress_bar=True)
+    encoded_translated_input = spp.encode(translated_input_text, out_type=str)
+    encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_translated_input]
+    write_to_file(encoded_texts, "{}/test.input_text.en_XX".format(directory))
+    encoded_summary = spp.encode(dataset["test"]["target"], out_type=str)
+    encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_summary]
+    # it's actually not english, but has to have en_XX suffix for generation.
+    # After generation, it will be translated into spanish or russian.
+    write_to_file(encoded_texts, "{}/test.summary.en_XX".format(directory))
 
 
 def filter_datasets():
@@ -26,6 +45,9 @@ def filter_datasets():
 
 def main():
     filter_datasets()
+    create_translated_data(datasets[1], "es")
+    create_translated_data(datasets[2], "ru")
+    create_translated_data(datasets[3], "my")
     statistics = dict()
     for language, dataset in zip(languages, datasets):
         for data_type in data_types:

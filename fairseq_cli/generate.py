@@ -179,7 +179,7 @@ def _main(cfg: DictConfig, output_file):
             x = tokenizer.decode(x)
         return x
 
-    cfg.scoring.lang = cfg.task.target_lang
+    cfg.scoring.translate_to_lang = cfg.task.translate_to_lang
     scorer = scoring.build_scorer(cfg.scoring, tgt_dict)
 
     num_sentences = 0

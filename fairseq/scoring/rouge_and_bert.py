@@ -7,15 +7,18 @@ from dataclasses import dataclass, field
 
 import evaluate
 import numpy as np
+from easynmt import EasyNMT
 
 from fairseq.dataclass import FairseqDataclass
 from fairseq.scoring import BaseScorer, register_scorer
 from fairseq.scoring.multilingual_tokenizer import MultilingualTokenizer
 
+translation_model = EasyNMT("mbart50_en2m")
+
 
 @dataclass
 class RougeBertScoreScorerConfig(FairseqDataclass):
-    lang: str = field(default="en_XX", metadata={"help": "Language"})
+    translate_to_lang: str = field(default="", metadata={"help": "Language"})
 
 
 @register_scorer("rougebert", dataclass=RougeBertScoreScorerConfig)
@@ -37,6 +40,11 @@ class RougeBertScoreScorer(BaseScorer):
 
     def rouge_and_bert_score(self):
         print("number of samples: {}".format(len(self.pred)))
+        if self.cfg.translate_to_lang in ["es", "ru", "my"]:
+            self.pred = translation_model.translate(self.pred,
+                                                    source_lang="en",
+                                                    target_lang=self.cfg.translate_to_lang,
+                                                    show_progress_bar=True)
         rouge_result = evaluate.load("rouge").compute(predictions=self.pred,
                                                       references=self.ref,
                                                       tokenizer=MultilingualTokenizer(language=self.cfg.lang,

@@ -82,6 +82,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         parser.add_argument('--keep-inference-langtok', action='store_true',
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
         parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings", default=False)
+        parser.add_argument('--translate-to-lang', default="", help='translate to language')
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)

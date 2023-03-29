@@ -12,7 +12,8 @@ def generate_and_evaluate_summaries(directory,
                                     checkpoint=None,
                                     lenpen="0.6",
                                     ngram="2",
-                                    min_len="0"):
+                                    min_len="0",
+                                    translate_to_lang=""):
     sys.argv.extend(
         [directory,
          "--path", checkpoint,
@@ -38,7 +39,8 @@ def generate_and_evaluate_summaries(directory,
          "--min-len", min_len,
          "--lenpen", lenpen,
          "--no-repeat-ngram-size", ngram,
-         "--prefix-size", "1"]
+         "--prefix-size", "1",
+         "--translate-to-lang", translate_to_lang]
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")

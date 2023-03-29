@@ -42,6 +42,21 @@ def main():
         save_metrics(metrics, output_dir)
         free_memory()
 
+    # input is translated from spanish, russian and burmese into english. Create summaries using english model.
+    # Translate summaries in english back into spanish, russian and burmese
+    # and evaluate using original data in these languages.
+    for translation_language in ["es", "ru", "my"]:
+        metrics["{}_translated".format(translation_language)] = \
+            generate_and_evaluate_summaries(directory="xlsum_{}_en".format(translation_language),
+                                            source_language="en_XX",
+                                            target_language="en_XX",
+                                            lang_pairs="en_XX-en_XX",
+                                            checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
+                                            lenpen=lenpen,
+                                            translate_to_lang=translation_language)
+        save_metrics(metrics, output_dir)
+        free_memory()
+
     # few shot experiments. Tune english model using few data from spanish, russian and burmese datasets
     for language in languages[1:]:
         for data_size in [10, 100, 1000, 10000]:
