@@ -8,6 +8,7 @@ import logging
 import time
 
 import torch
+
 from fairseq.data import (
     FairseqDataset,
     LanguagePairDataset,
@@ -29,6 +30,14 @@ def get_time_gap(s, e):
         datetime.datetime.fromtimestamp(e) - datetime.datetime.fromtimestamp(s)
     ).__str__()
 
+
+def freeze_embeddings(model):
+    for d in [model.encoder, model.decoder]:
+        for par in d.embed_positions.parameters():
+            par.requires_grad = False
+        for par in d.embed_tokens.parameters():
+            par.requires_grad = False
+    return model
 
 ###
 
@@ -72,6 +81,8 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                             action=FileContentsAction)
         parser.add_argument('--keep-inference-langtok', action='store_true',
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
+        parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings", default=False)
+        parser.add_argument('--translate-to-lang', default="", help='translate to language')
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)
@@ -217,7 +228,10 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         )
 
     def build_model(self, args, from_checkpoint=False):
-        return super().build_model(args, from_checkpoint)
+        model = super().build_model(args, from_checkpoint)
+        if self.training and args.freeze_embeddings:
+            freeze_embeddings(model)
+        return model
 
     def valid_step(self, sample, model, criterion):
         loss, sample_size, logging_output = super().valid_step(sample, model, criterion)
@@ -228,33 +242,16 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
     ):
         with torch.no_grad():
             _, tgt_langtok_spec = self.args.langtoks["main"]
-            if not self.args.lang_tok_replacing_bos_eos:
-                if prefix_tokens is None and tgt_langtok_spec:
-                    tgt_lang_tok = self.data_manager.get_decoder_langtok(
-                        self.args.target_lang, tgt_langtok_spec
-                    )
-                    src_tokens = sample["net_input"]["src_tokens"]
-                    bsz = src_tokens.size(0)
-                    prefix_tokens = (
-                        torch.LongTensor([[tgt_lang_tok]]).expand(bsz, 1).to(src_tokens)
-                    )
-                return generator.generate(
-                    models,
-                    sample,
-                    prefix_tokens=prefix_tokens,
-                    constraints=constraints,
+            return generator.generate(
+                models,
+                sample,
+                prefix_tokens=prefix_tokens,
+                bos_token=self.data_manager.get_decoder_langtok(
+                    self.args.target_lang, tgt_langtok_spec
                 )
-            else:
-                return generator.generate(
-                    models,
-                    sample,
-                    prefix_tokens=prefix_tokens,
-                    bos_token=self.data_manager.get_decoder_langtok(
-                        self.args.target_lang, tgt_langtok_spec
-                    )
-                    if tgt_langtok_spec
-                    else self.target_dictionary.eos(),
-                )
+                if tgt_langtok_spec
+                else self.target_dictionary.eos(),
+            )
 
     def reduce_metrics(self, logging_outputs, criterion):
         super().reduce_metrics(logging_outputs, criterion)

@@ -5,12 +5,18 @@ import torch
 from fairseq_cli import generate
 
 
-def generate_and_evaluate_summaries(language="en_XX",
+def generate_and_evaluate_summaries(directory,
+                                    source_language="en_XX",
+                                    target_language="en_XX",
                                     lang_pairs="en_XX-en_XX",
-                                    checkpoint_dir="default"):
+                                    checkpoint=None,
+                                    lenpen="0.6",
+                                    ngram="2",
+                                    min_len="0",
+                                    translate_to_lang=""):
     sys.argv.extend(
-        ["xlsum",
-         "--path", "{}/checkpoint_last.pt".format(checkpoint_dir),
+        [directory,
+         "--path", checkpoint,
          "--task", "translation_multi_simple_epoch",
          "--gen-subset", "test",
          "--encoder-langtok", "src",
@@ -18,22 +24,32 @@ def generate_and_evaluate_summaries(language="en_XX",
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--lang-pairs", lang_pairs,
-         "--source-lang", language,
-         "--target-lang", language,
-         "--max-tokens", "1024",
+         "--source-lang", source_language,
+         "--target-lang", target_language,
+         "--max-tokens", "20000",
          "--truncate-source",
          "--beam", "5",
          "--bpe", "sentencepiece",
          "--sentencepiece-model", "../summarization_datasets/mbart.cc25.v2/sentence.bpe.model",
          "--remove-bpe",
          "--scoring", "rougebert",
-         "--batch-size", "64",
-         "--num-workers", "16",
-         "--lang-tok-style", "mbart"]
+         "--num-workers", "4",
+         "--lang-tok-style", "mbart",
+         "--max-len-b", "100",
+         "--min-len", min_len,
+         "--lenpen", lenpen,
+         "--no-repeat-ngram-size", ngram,
+         "--prefix-size", "1",
+         "--translate-to-lang", translate_to_lang]
     )
     if torch.cuda.is_available():
-        sys.argv.append("--memory-efficient-fp16")
+        sys.argv.append("--fp16")
     results = generate.cli_main().scores
-    print("Checkpoint: {}, language: {}, results: {}".format(checkpoint_dir, language, results))
+    print("Checkpoint: {}, languages: {}-{}, results: {}".format(
+        checkpoint, source_language, target_language, results))
     sys.argv = sys.argv[:1]
     return results
+
+
+if __name__ == "__main__":
+    generate_and_evaluate_summaries()

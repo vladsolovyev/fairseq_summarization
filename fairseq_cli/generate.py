@@ -148,7 +148,7 @@ def _main(cfg: DictConfig, output_file):
         ignore_invalid_inputs=cfg.dataset.skip_invalid_size_inputs_valid_test,
         required_batch_size_multiple=cfg.dataset.required_batch_size_multiple,
         seed=cfg.common.seed,
-        num_shards=cfg.dataset.num_workers,
+        num_shards=cfg.dataset.num_shards,
         shard_id=cfg.distributed_training.distributed_rank,
         num_workers=cfg.dataset.num_workers,
         data_buffer_size=cfg.dataset.data_buffer_size,
@@ -179,7 +179,7 @@ def _main(cfg: DictConfig, output_file):
             x = tokenizer.decode(x)
         return x
 
-    cfg.scoring.lang = cfg.task.target_lang
+    cfg.scoring.translate_to_lang = cfg.task.translate_to_lang
     scorer = scoring.build_scorer(cfg.scoring, tgt_dict)
 
     num_sentences = 0

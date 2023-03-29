@@ -146,5 +146,6 @@ summarization_datasets/mbart.cc25.v2
 # Data
 summarization_datasets/xlsum*
 summarization_datasets/wikilingua*
+summarization_datasets/cache/*
 summarization_scripts/xlsum*
 summarization_scripts/wikilingua*

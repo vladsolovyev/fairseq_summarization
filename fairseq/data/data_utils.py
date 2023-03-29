@@ -57,11 +57,8 @@ def collate_tokens(
     def copy_tensor(src, dst):
         assert dst.numel() == src.numel()
         if move_eos_to_beginning:
-            if eos_idx is None:
-                # if no eos_idx is specified, then use the last token in src
-                dst[0] = src[-1]
-            else:
-                dst[0] = eos_idx
+            dst[0] = src[-1]
+            # in huggingface implementation it is just dst[1:] = src
             dst[1:] = src[:-1]
         else:
             dst.copy_(src)

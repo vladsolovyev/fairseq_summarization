@@ -5,10 +5,13 @@ import torch
 from fairseq_cli import train
 
 
-def train_summarization_model(save_dir="default",
-                              data_dir="xlsum",
+def train_summarization_model(data_dir,
+                              save_dir="default",
                               lang_pairs="en_XX-en_XX",
-                              checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt"):
+                              checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
+                              freeze_embeddings=False,
+                              max_epoch="1",
+                              validate=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -24,19 +27,20 @@ def train_summarization_model(save_dir="default",
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--lang-pairs", lang_pairs,
          "--criterion", "label_smoothed_cross_entropy",
-         "--label-smoothing", "0.2",
+         "--label-smoothing", "0.1",
          "--optimizer", "adam",
-         "--adam-eps", "1e-06",
-         "--adam-betas", "(0.9, 0.98)",
+         "--adam-eps", "1e-08",
+         "--adam-betas", "(0.9, 0.999)",
          "--lr-scheduler", "polynomial_decay",
-         "--lr", "3e-05",
-         "--warmup-updates", "5000",
-         "--total-num-update", "60000",
-         "--dropout", "0.3",
-         "--attention-dropout", "0.1",
+         "--lr", "2e-05",
+         "--power", "1",
+         "--end-learning-rate", "5e-10",
+         "--clip-norm", "0.1",
+         "--total-num-update", "80000",
          "--weight-decay", "0.01",
-         "--max-tokens", "1024",
-         "--no-epoch-checkpoints",
+         "--dropout", "0.1",
+         "--attention-dropout", "0.1",
+         "--max-tokens", "2800",
          "--save-dir", save_dir,
          "--seed", "222",
          "--log-format", "simple",
@@ -45,13 +49,28 @@ def train_summarization_model(save_dir="default",
          "--reset-meters",
          "--reset-dataloader",
          "--reset-lr-scheduler",
-         "--max-epoch", "1",
-         "--disable-validation",
+         "--max-epoch", max_epoch,
          "--truncate-source",
-         "--batch-size", "32",
-         "--lang-tok-style", "mbart"]
+         "--lang-tok-style", "mbart",
+         "--num-workers", "16",
+         "--update-freq", "3",
+         "--ddp-backend", "no_c10d",
+         "--find-unused-parameters",
+         "--no-epoch-checkpoints"]
     )
+    if validate:
+        sys.argv.extend(["--keep-best-checkpoints", "1",
+                         "--no-last-checkpoints",
+                         "--patience", "2"])
+    else:
+        sys.argv.append("--disable-validation")
+    if freeze_embeddings:
+        sys.argv.append("--freeze-embeddings")
     if torch.cuda.is_available():
-        sys.argv.append("--memory-efficient-fp16")
+        sys.argv.append("--fp16")
     train.cli_main()
     sys.argv = sys.argv[:1]
+
+
+if __name__ == "__main__":
+    train_summarization_model("xlsum_10")
