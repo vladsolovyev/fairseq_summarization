@@ -31,7 +31,8 @@ def preprocess_data(source_language, target_language, src_directory,
 def save_metrics(metrics, output_dir):
     metrics_df = pd.DataFrame.from_dict(metrics, orient='index')
     metrics_df.sort_index(inplace=True)
-    metrics_df.to_csv("{}/metrics.csv".format(output_dir))
+    output_file = "{}/metrics.csv".format(output_dir)
+    metrics_df.to_csv(output_file, mode='a', header=not os.path.exists(output_file))
 
 
 def free_memory():
