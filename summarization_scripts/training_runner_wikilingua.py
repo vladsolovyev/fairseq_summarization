@@ -41,7 +41,7 @@ def main():
     train_summarization_model(data_dir="wikilingua_mono",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
                               save_dir=checkpoint_dir,
-                              max_epoch="5")
+                              max_epoch="2")
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_zero".format(language)] = \
