@@ -55,11 +55,11 @@ def train_summarization_model(data_dir,
          "--num-workers", "16",
          "--update-freq", "3",
          "--ddp-backend", "no_c10d",
-         "--find-unused-parameters"]
+         "--find-unused-parameters",
+         "--no-epoch-checkpoints"]
     )
     if validate:
         sys.argv.extend(["--keep-best-checkpoints", "1",
-                         "--no-epoch-checkpoints",
                          "--no-last-checkpoints",
                          "--patience", "2"])
     else:
