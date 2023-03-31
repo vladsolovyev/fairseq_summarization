@@ -45,7 +45,6 @@
 
 - TODO: add evaluation using [flan-ul2](https://huggingface.co/google/flan-ul2)
 - [Experiments runner](./training_runner_wikilingua.py)
-
 - First results :
   1. [Without embeddings freezing](./2023-03-27_wiki/metrics_without_freezing.csv)
   2. With embeddings freezing - in process
@@ -54,6 +53,10 @@
 - All experiments are run using [fairseq library](https://github.com/facebookresearch/fairseq)
 - [Script for training](./train_summarization.py)
 - [Script for summaries generation](./generate_summaries.py)
+
+### Metrics for evaluation
+- Rouge - [paper](https://aclanthology.org/W04-1013.pdf); [description with code examples](https://huggingface.co/spaces/evaluate-metric/rouge)
+- BertScore - [paper](https://arxiv.org/pdf/1904.09675.pdf); [description with code examples](https://huggingface.co/spaces/evaluate-metric/bertscore)
 
 ### TODO
 - Add residual connections removing form the [paper](https://aclanthology.org/2021.acl-long.101.pdf). An example is [here](https://github.com/dannigt/fairseq/tree/master/examples/residual_drop)
