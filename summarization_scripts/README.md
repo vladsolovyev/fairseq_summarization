@@ -56,7 +56,7 @@
 - [Script for summaries generation](./generate_summaries.py)
 
 ### TODO
-- Add residual connections removing.
+- Add residual connections removing form the [paper](https://aclanthology.org/2021.acl-long.101.pdf). An example is [here](https://github.com/dannigt/fairseq/tree/master/examples/residual_drop)
 - Run all experiments in 4 variants:
   - without embeddings freezing and without residual connections removing
   - without embeddings freezing but with residual connections removing
