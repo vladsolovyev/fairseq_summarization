@@ -14,9 +14,9 @@ from fairseq.scoring import BaseScorer, register_scorer
 from fairseq.scoring.multilingual_tokenizer import MultilingualTokenizer
 
 translation_model = EasyNMT("mbart50_en2m")
-translation_to_mbart_language = {dict({"es": "es_XX",
-                                       "ru": "ru_RU",
-                                       "my": "my_MM"})}
+translation_to_mbart_language = dict({"es": "es_XX",
+                                      "ru": "ru_RU",
+                                      "my": "my_MM"})
 
 
 @dataclass
