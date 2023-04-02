@@ -10,7 +10,7 @@ def main():
         preprocess_data(language, language, "xlsum_10000", "xlsum_10000")
     for translation_language in ["es", "ru", "my"]:
         directory = "xlsum_{}_en".format(translation_language)
-        preprocess_data("en_XX", "en_XX", directory, directory, add_train_data=False)
+        preprocess_data("en_XX", "en_XX", directory, directory, add_train_data=False, add_test_data=True)
 
 
 
