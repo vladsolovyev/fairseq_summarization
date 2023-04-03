@@ -1,6 +1,7 @@
 import gc
 import os
 import sys
+from pathlib import Path
 
 import pandas as pd
 import torch
@@ -33,10 +34,13 @@ def preprocess_data(source_language, target_language, src_directory,
 def save_metrics(metrics, output_dir):
     output_file = "{}/metrics.csv".format(output_dir)
     new_metrics_df = pd.DataFrame.from_dict(metrics, orient='index')
-    metrics_df = pd.read_csv(output_file, index_col=0)
-    metrics_df = metrics_df.append(new_metrics_df)
-    metrics_df = metrics_df[~metrics_df.index.duplicated(keep='last')].sort_index()
-    metrics_df.to_csv(output_file, mode="w")
+    if Path(output_file).is_file():
+        metrics_df = pd.read_csv(output_file, index_col=0)
+        metrics_df = metrics_df.append(new_metrics_df)
+        metrics_df = metrics_df[~metrics_df.index.duplicated(keep='last')].sort_index()
+        metrics_df.to_csv(output_file, mode="w")
+    else:
+        new_metrics_df.to_csv(output_file, mode="w")
 
 
 def free_memory():
