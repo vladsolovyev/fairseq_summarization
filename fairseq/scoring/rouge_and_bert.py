@@ -6,23 +6,30 @@
 from dataclasses import dataclass, field
 
 import evaluate
+import nltk
 import numpy as np
 from easynmt import EasyNMT
+from rouge_score import rouge_scorer
 
 from fairseq.dataclass import FairseqDataclass
 from fairseq.scoring import BaseScorer, register_scorer
-from fairseq.scoring.multilingual_tokenizer import MultilingualTokenizer
 
+nltk.download("stopwords")
 translation_model = EasyNMT("mbart50_en2m")
 translation_to_mbart_language = dict({"es": "es_XX",
                                       "ru": "ru_RU",
                                       "my": "my_MM"})
+mbart_lang_to_rouge_lang = dict({"en_XX": "english",
+                                 "es_XX": "spanish",
+                                 "ru_RU": "russian",
+                                 "my_MM": "burmese"})
 
 
 @dataclass
 class RougeBertScoreScorerConfig(FairseqDataclass):
     lang: str = field(default="en_XX", metadata={"help": "Language"})
     translate_to_lang: str = field(default="", metadata={"help": "translation language"})
+    rouge_scorer: str = field(default="huggingface", metadata={"help": "rouge scorer implementation"})
 
 
 @register_scorer("rougebert", dataclass=RougeBertScoreScorerConfig)
@@ -42,6 +49,14 @@ class RougeBertScoreScorer(BaseScorer):
     def result_string(self, order=4):
         return f"BERTScore: {self.rouge_and_bert_score()}"
 
+    def calculate_multilingual_rouge_scores(self, use_stemmer=False):
+        scorer = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL", "rougeLsum"],
+                                          use_stemmer=use_stemmer,
+                                          lang=mbart_lang_to_rouge_lang[self.cfg.lang])
+        scores_all_samples = [scorer.score(pred, ref) for pred, ref in zip(self.pred, self.ref)]
+        return {metric: np.mean([score_per_sample[metric] for score_per_sample in scores_all_samples])
+                for metric in scores_all_samples[0]}
+
     def rouge_and_bert_score(self):
         print("number of samples: {}".format(len(self.pred)))
         if self.cfg.translate_to_lang in ["es", "ru", "my"]:
@@ -50,17 +65,27 @@ class RougeBertScoreScorer(BaseScorer):
                                                     source_lang="en",
                                                     target_lang=self.cfg.translate_to_lang,
                                                     show_progress_bar=True)
-        rouge_result = evaluate.load("rouge").compute(predictions=self.pred,
-                                                      references=self.ref,
-                                                      tokenizer=MultilingualTokenizer(language=self.cfg.lang,
-                                                                                      use_stemmer=True).tokenize)
+        rouge_result_with_stemming = dict()
+        rouge_result_without_stemming = dict()
+        if self.cfg.rouge_scorer == "huggingface":
+            rouge_result_with_stemming = evaluate.load("rouge").compute(predictions=self.pred, references=self.ref,
+                                                                        use_stemmer=True)
+            rouge_result_without_stemming = evaluate.load("rouge").compute(predictions=self.pred, references=self.ref,
+                                                                           use_stemmer=False)
+        elif self.cfg.rouge_scorer == "multilingual":
+            rouge_result_with_stemming = self.calculate_multilingual_rouge_scores(use_stemmer=True)
+            rouge_result_without_stemming = self.calculate_multilingual_rouge_scores(use_stemmer=False)
+        rouge_result_with_stemming = {"{}_with_stemming".format(k): v for k, v in
+                                      rouge_result_with_stemming.items()}
+        rouge_result_without_stemming = {"{}_without_stemming".format(k): v for k, v in
+                                         rouge_result_without_stemming.items()}
         bert_result = evaluate.load("bertscore").compute(predictions=self.pred,
                                                          references=self.ref,
                                                          model_type="bert-base-multilingual-cased")
         if bert_result["hashcode"]:
             del bert_result["hashcode"]
         bert_result = {"bert_score_{}".format(k): np.mean(v) for k, v in bert_result.items()}
-        results = rouge_result | bert_result
+        results = rouge_result_with_stemming | rouge_result_without_stemming | bert_result
         results = {key: value * 100 for key, value in results.items()}
         results["gen_len"] = np.mean([len(sentence.split()) for sentence in self.pred])
         self.scores = {k: round(v, 4) for k, v in results.items()}

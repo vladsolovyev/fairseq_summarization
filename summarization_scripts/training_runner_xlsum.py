@@ -7,6 +7,7 @@ from summarization_scripts.utils import free_memory, save_metrics
 
 languages = ["en_XX", "es_XX", "ru_RU", "my_MM"]
 lenpen = "0.6"
+rouge_scorer = "multilingual"
 
 
 def main():
@@ -24,7 +25,8 @@ def main():
                                                             target_language=language,
                                                             lang_pairs="{}-{}".format(language, language),
                                                             checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                                            lenpen=lenpen)
+                                                            lenpen=lenpen,
+                                                            rouge_scorer=rouge_scorer)
         if language != "en_XX":
             shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
@@ -38,7 +40,8 @@ def main():
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
-                                            lenpen=lenpen)
+                                            lenpen=lenpen,
+                                            rouge_scorer=rouge_scorer)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -53,7 +56,8 @@ def main():
                                             lang_pairs="en_XX-en_XX",
                                             checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                             lenpen=lenpen,
-                                            translate_to_lang=translation_language)
+                                            translate_to_lang=translation_language,
+                                            rouge_scorer=rouge_scorer)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -75,7 +79,8 @@ def main():
                                                 target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
                                                 checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                                lenpen=lenpen)
+                                                lenpen=lenpen,
+                                                rouge_scorer=rouge_scorer)
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
@@ -94,7 +99,8 @@ def main():
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                            lenpen=lenpen)
+                                            lenpen=lenpen,
+                                            rouge_scorer=rouge_scorer)
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
         free_memory()
@@ -112,7 +118,8 @@ def main():
                                             target_language=language,
                                             lang_pairs="{}-{}".format(language, language),
                                             checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                            lenpen=lenpen)
+                                            lenpen=lenpen,
+                                            rouge_scorer=rouge_scorer)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -129,7 +136,8 @@ def main():
                                         target_language="my_MM",
                                         lang_pairs="my_MM-my_MM",
                                         checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                        lenpen=lenpen)
+                                        lenpen=lenpen,
+                                        rouge_scorer=rouge_scorer)
     save_metrics(metrics, output_dir)
     free_memory()
 

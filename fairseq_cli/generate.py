@@ -181,6 +181,7 @@ def _main(cfg: DictConfig, output_file):
 
     cfg.scoring.lang = cfg.task.target_lang
     cfg.scoring.translate_to_lang = cfg.task.translate_to_lang
+    cfg.scoring.rouge_scorer = cfg.task.rouge_scorer
     scorer = scoring.build_scorer(cfg.scoring, tgt_dict)
 
     num_sentences = 0
