@@ -47,7 +47,7 @@
 - [Experiments runner](./training_runner_wikilingua.py)
 - First results :
   1. [Without embeddings freezing](./2023-03-27_wiki/metrics_without_freezing.csv)
-  2. With embeddings freezing - in process
+  2. [With embeddings freezing](./2023-03-30_wiki/metrics_with_freezing.csv)
 
 ### Experiments setup
 - All experiments are run using [fairseq library](https://github.com/facebookresearch/fairseq)
