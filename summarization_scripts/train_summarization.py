@@ -1,8 +1,11 @@
+import os
 import sys
 
 import torch
 
 from fairseq_cli import train
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 def train_summarization_model(data_dir,
