@@ -149,3 +149,4 @@ summarization_datasets/wikilingua*
 summarization_datasets/cache/*
 summarization_scripts/xlsum*
 summarization_scripts/wikilingua*
+summarization_scripts/cache*
