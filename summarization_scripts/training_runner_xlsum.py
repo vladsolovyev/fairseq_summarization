@@ -10,15 +10,17 @@ lenpen = "0.6"
 rouge_scorer = "multilingual"
 
 
-def main():
+def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix=""):
     metrics = dict()
-    output_dir = "{}_xlsum".format(datetime.today().strftime('%Y-%m-%d'))
+    output_dir = "xlsum/{}".format(prefix)
     # every language separately
     for language in languages:
         checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs="{}-{}".format(language, language),
-                                  save_dir=checkpoint_dir)
+                                  save_dir=checkpoint_dir,
+                                  freeze_embeddings=freeze_embeddings,
+                                  encoder_drop_residual=encoder_drop_residual)
         free_memory()
         metrics[language] = generate_and_evaluate_summaries(directory="xlsum",
                                                             source_language=language,
@@ -71,7 +73,9 @@ def main():
                                       lang_pairs="{}-{}".format(language, language),
                                       checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                       save_dir=checkpoint_dir,
-                                      max_epoch="5")
+                                      max_epoch="5",
+                                      freeze_embeddings=freeze_embeddings,
+                                      encoder_drop_residual=encoder_drop_residual)
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
@@ -91,7 +95,9 @@ def main():
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs="{}-{}".format(language, language),
                                   checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
-                                  save_dir=checkpoint_dir)
+                                  save_dir=checkpoint_dir,
+                                  freeze_embeddings=freeze_embeddings,
+                                  encoder_drop_residual=encoder_drop_residual)
         free_memory()
         metrics["{}_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
@@ -109,7 +115,9 @@ def main():
     checkpoint_dir = "{}/multilingual".format(output_dir)
     train_summarization_model(data_dir="xlsum",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
-                              save_dir=checkpoint_dir)
+                              save_dir=checkpoint_dir,
+                              freeze_embeddings=freeze_embeddings,
+                              encoder_drop_residual=encoder_drop_residual)
     free_memory()
     for language in languages:
         metrics["{}_multilingual".format(language)] = \
@@ -128,7 +136,9 @@ def main():
     train_summarization_model(data_dir="xlsum",
                               lang_pairs="my_MM-my_MM",
                               checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
-                              save_dir=checkpoint_dir)
+                              save_dir=checkpoint_dir,
+                              freeze_embeddings=freeze_embeddings,
+                              encoder_drop_residual=encoder_drop_residual)
     free_memory()
     metrics["my_MM_multilingual_tuned_burmese"] = \
         generate_and_evaluate_summaries(directory="xlsum",
@@ -147,4 +157,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_xlsum_experiments()
