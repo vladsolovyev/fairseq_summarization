@@ -9,6 +9,7 @@ import evaluate
 import nltk
 import numpy as np
 from easynmt import EasyNMT
+from langid.langid import LanguageIdentifier, model
 from rouge_score import rouge_scorer
 
 from fairseq.dataclass import FairseqDataclass
@@ -49,22 +50,7 @@ class RougeBertScoreScorer(BaseScorer):
     def result_string(self, order=4):
         return f"BERTScore: {self.rouge_and_bert_score()}"
 
-    def calculate_multilingual_rouge_scores(self, use_stemmer=False):
-        scorer = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL", "rougeLsum"],
-                                          use_stemmer=use_stemmer,
-                                          lang=mbart_lang_to_rouge_lang[self.cfg.lang])
-        scores_all_samples = [scorer.score(pred, ref) for pred, ref in zip(self.pred, self.ref)]
-        return {metric: np.mean([score_per_sample[metric] for score_per_sample in scores_all_samples])
-                for metric in scores_all_samples[0]}
-
-    def rouge_and_bert_score(self):
-        print("number of samples: {}".format(len(self.pred)))
-        if self.cfg.translate_to_lang in ["es", "ru", "my"]:
-            self.cfg.lang = translation_to_mbart_language[self.cfg.translate_to_lang]
-            self.pred = translation_model.translate(self.pred,
-                                                    source_lang="en",
-                                                    target_lang=self.cfg.translate_to_lang,
-                                                    show_progress_bar=True)
+    def calculate_rouge_scores(self):
         rouge_result_with_stemming = dict()
         rouge_result_without_stemming = dict()
         if self.cfg.rouge_scorer == "huggingface":
@@ -79,13 +65,39 @@ class RougeBertScoreScorer(BaseScorer):
                                       rouge_result_with_stemming.items()}
         rouge_result_without_stemming = {"{}_without_stemming".format(k): v for k, v in
                                          rouge_result_without_stemming.items()}
+        return rouge_result_with_stemming | rouge_result_without_stemming
+
+    def calculate_multilingual_rouge_scores(self, use_stemmer=False):
+        scorer = rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL", "rougeLsum"],
+                                          use_stemmer=use_stemmer,
+                                          lang=mbart_lang_to_rouge_lang[self.cfg.lang])
+        scores_all_samples = [scorer.score(pred, ref) for pred, ref in zip(self.pred, self.ref)]
+        return {metric: np.mean([score_per_sample[metric] for score_per_sample in scores_all_samples])
+                for metric in scores_all_samples[0]}
+
+    def calculate_language_probabilities(self):
+        identifier = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+        identifier.set_languages(languages)
+        results = [dict(identifier.rank(summary)) for summary in self.pred]
+        return {"{}_prob".format(language): np.mean([result[language] for result in results]) for language in languages}
+
+    def calculate_bert_score(self):
         bert_result = evaluate.load("bertscore").compute(predictions=self.pred,
                                                          references=self.ref,
                                                          model_type="bert-base-multilingual-cased")
         if bert_result["hashcode"]:
             del bert_result["hashcode"]
-        bert_result = {"bert_score_{}".format(k): np.mean(v) for k, v in bert_result.items()}
-        results = rouge_result_with_stemming | rouge_result_without_stemming | bert_result
+        return {"bert_score_{}".format(k): np.mean(v) for k, v in bert_result.items()}
+
+    def rouge_and_bert_score(self):
+        print("number of samples: {}".format(len(self.pred)))
+        if self.cfg.translate_to_lang in languages[1:]:
+            self.cfg.lang = translation_to_mbart_language[self.cfg.translate_to_lang]
+            self.pred = translation_model.translate(self.pred,
+                                                    source_lang="en",
+                                                    target_lang=self.cfg.translate_to_lang,
+                                                    show_progress_bar=True)
+        results = self.calculate_rouge_scores() | self.calculate_bert_score() | self.calculate_language_probabilities()
         results = {key: value * 100 for key, value in results.items()}
         results["gen_len"] = np.mean([len(sentence.split()) for sentence in self.pred])
         self.scores = {k: round(v, 4) for k, v in results.items()}
