@@ -21,7 +21,6 @@ def train_summarization_model(data_dir,
          "--encoder-normalize-before",
          "--decoder-normalize-before",
          "--arch", "mbart_large_residual_drop",
-         "--encoder-drop-residual", encoder_drop_residual,
          "--layernorm-embedding",
          "--task", "translation_multi_simple_epoch",
          "--sampling-method", "temperature",
@@ -71,6 +70,8 @@ def train_summarization_model(data_dir,
         sys.argv.append("--disable-validation")
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")
+    if encoder_drop_residual:
+        sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():
         sys.argv.append("--fp16")
     train.cli_main()
