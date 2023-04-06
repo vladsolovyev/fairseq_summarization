@@ -1,5 +1,4 @@
 import shutil
-from datetime import datetime
 
 from summarization_scripts.generate_summaries import generate_and_evaluate_summaries
 from summarization_scripts.train_summarization import train_summarization_model

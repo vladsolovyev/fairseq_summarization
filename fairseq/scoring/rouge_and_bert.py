@@ -19,11 +19,12 @@ nltk.download("stopwords")
 translation_model = EasyNMT("mbart50_en2m")
 translation_to_mbart_language = dict({"es": "es_XX",
                                       "ru": "ru_RU",
-                                      "my": "my_MM"})
+                                      "gu": "gu_IN"})
 mbart_lang_to_rouge_lang = dict({"en_XX": "english",
                                  "es_XX": "spanish",
                                  "ru_RU": "russian",
-                                 "my_MM": "burmese"})
+                                 "gu_IN": "gujarati"})
+languages = ["en", "es", "ru", "gu"]
 
 
 @dataclass

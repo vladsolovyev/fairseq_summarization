@@ -5,7 +5,7 @@
 ### Datasets:
 1. [xl-sum](https://github.com/csebuetnlp/xl-sum)
    - Multilingual abstractive summarization. Multilingual monolingual article-summary pairs from BBC in 44 languages.
-   - I use 4 languages for my thesis: English, Spanish, Russian and Burmese. Burmese is a special case as it is a low-resource as well in the xl-sum dataset as in the pretraining of [mbart](https://arxiv.org/pdf/2001.08210.pdf)
+   - I use 4 languages for my thesis: English, Spanish, Russian and Gujarati. Gujarati is a special case as it is a low-resource as well in the xl-sum dataset as in the pretraining of [mbart](https://arxiv.org/pdf/2001.08210.pdf)
    - For training, I remove some samples which have very short articles (not more than 20 sentence parts) or very short summaries (not more than 10 sentence parts).
    - Original statistic and baselines are provided on the [xl-sum github webpage](https://github.com/csebuetnlp/xl-sum)
    - Statistic after removing some samples from the training subset: [stat_xlsum.txt](../summarization_datasets/stat_xlsum.txt)
@@ -22,13 +22,13 @@
 ### Experiments
 
 #### xl-sum
-1. en_XX, es_XX, ru_RU, my_MM - monolingual models, which are trained and evaluated for every language separately.
-2. es_XX_zero, ru_RU_zero, my_MM_zero - use monolingual english model from the experiment no. 1 and perform zero-shot experiments using test data of spanish, russian and burmese
-3. es_XX_translated, ru_RU_translated, my_MM_translated - translate test data of spanish, russian and burmese into english, create summaries in english using monolingual english model from the experiment no. 1, translate summaries back into spanish, russian and burmese, and evaluate using test datasets of these languages.
-4. es_XX_tuned_10/100/1000/10000, ru_RU_tuned_10/100/1000/10000, my_MM_tuned_10/100/1000 - use monolingual english model from the experiment no. 1 and perform few-shot experiments. Tune english model using 10/100/1000/10000 samples from train dataset of spanish, russian and burmese. Evaluate using test datasets of these languages.
-5. es_XX_tuned_all, ru_RU_tuned_all, my_MM_tuned_all - use monolingual english model from the experiment no. 1 and tune it using complete train datasets of spanish, russian and burmese separately. Evaluate using test datasets of these languages.
-6. en_XX_multilingual, es_XX_multilingual, ru_RU_multilingual, my_MM_multilingual - train one multilingual model using only english, spanish and russian together. Evaluate using test datasets of all 4 languages (also burmese, another few-shot experiment for burmese) separately.
-7. my_MM_multilingual_tuned_burmese - tune multilingual model from the experiment no. 6 using burmese train data and evaluate using burmese test data
+1. en_XX, es_XX, ru_RU, gu_IN - monolingual models, which are trained and evaluated for every language separately.
+2. es_XX_zero, ru_RU_zero, gu_IN_zero - use monolingual english model from the experiment no. 1 and perform zero-shot experiments using test data of spanish, russian and gujarati
+3. es_XX_translated, ru_RU_translated, gu_IN_translated - translate test data of spanish, russian and gujarati into english, create summaries in english using monolingual english model from the experiment no. 1, translate summaries back into spanish, russian and gujarati, and evaluate using test datasets of these languages.
+4. es_XX_tuned_10/100/1000/10000, ru_RU_tuned_10/100/1000/10000, gu_IN_tuned_10/100/1000 - use monolingual english model from the experiment no. 1 and perform few-shot experiments. Tune english model using 10/100/1000/10000 samples from train dataset of spanish, russian and gujarati. Evaluate using test datasets of these languages.
+5. es_XX_tuned_all, ru_RU_tuned_all, gu_IN_tuned_all - use monolingual english model from the experiment no. 1 and tune it using complete train datasets of spanish, russian and gujarati separately. Evaluate using test datasets of these languages.
+6. en_XX_multilingual, es_XX_multilingual, ru_RU_multilingual, gu_IN_multilingual - train one multilingual model using only english, spanish and russian together. Evaluate using test datasets of all 4 languages (also gujarati, another few-shot experiment for gujarati) separately.
+7. gu_IN_multilingual_tuned_gujarati - tune multilingual model from the experiment no. 6 using gujarati train data and evaluate using gujarati test data
 
 - TODO: add evaluation using [flan-ul2](https://huggingface.co/google/flan-ul2)
 - [Experiments runner](./training_runner_xlsum.py)

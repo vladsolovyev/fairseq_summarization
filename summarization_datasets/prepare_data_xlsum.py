@@ -11,11 +11,11 @@ from summarization_datasets.utils import write_to_file
 data_types = ["train", "test"]
 columns = ["text", "target"]
 new_columns = ["input_text", "summary"]
-languages = ["en_XX", "es_XX", "ru_RU", "my_MM"]
+languages = ["en_XX", "es_XX", "ru_RU", "gu_IN"]
 datasets = [load_dataset("GEM/xlsum", "english", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "spanish", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "russian", cache_dir="./cache"),
-            load_dataset("GEM/xlsum", "burmese", cache_dir="./cache")]
+            load_dataset("GEM/xlsum", "gujarati", cache_dir="./cache")]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 translation_model = EasyNMT("mbart50_m2en")
 
@@ -47,7 +47,7 @@ def main():
     filter_datasets()
     create_translated_data(datasets[1], "es")
     create_translated_data(datasets[2], "ru")
-    create_translated_data(datasets[3], "my")
+    create_translated_data(datasets[3], "gu")
     statistics = dict()
     for language, dataset in zip(languages, datasets):
         for data_type in data_types:

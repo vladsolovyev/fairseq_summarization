@@ -1,11 +1,10 @@
 import shutil
-from datetime import datetime
 
 from summarization_scripts.generate_summaries import generate_and_evaluate_summaries
 from summarization_scripts.train_summarization import train_summarization_model
 from summarization_scripts.utils import free_memory, save_metrics
 
-languages = ["en_XX", "es_XX", "ru_RU", "my_MM"]
+languages = ["en_XX", "es_XX", "ru_RU", "gu_IN"]
 lenpen = "0.6"
 rouge_scorer = "multilingual"
 
@@ -34,7 +33,7 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # zero shot. Evaluate spanish, russian and burmese datasets using english model
+    # zero shot. Evaluate spanish, russian and gujarati datasets using english model
     for language in languages[1:]:
         metrics["{}_zero".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
@@ -47,10 +46,10 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # input is translated from spanish, russian and burmese into english. Create summaries using english model.
-    # Translate summaries in english back into spanish, russian and burmese
+    # input is translated from spanish, russian and gujarati into english. Create summaries using english model.
+    # Translate summaries in english back into spanish, russian and gujarati
     # and evaluate using original data in these languages.
-    for translation_language in ["es", "ru", "my"]:
+    for translation_language in ["es", "ru", "gu"]:
         metrics["{}_translated".format(translation_language)] = \
             generate_and_evaluate_summaries(directory="xlsum_{}_en".format(translation_language),
                                             source_language="en_XX",
@@ -63,10 +62,10 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # few shot experiments. Tune english model using few data from spanish, russian and burmese datasets
+    # few shot experiments. Tune english model using few data from spanish, russian and gujarati datasets
     for language in languages[1:]:
         for data_size in [10, 100, 1000, 10000]:
-            if language == "my_MM" and data_size == 10000:
+            if language == "gu_IN" and data_size == 10000:
                 break
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
             train_summarization_model(data_dir="xlsum_{}".format(data_size),
@@ -89,7 +88,7 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
             save_metrics(metrics, output_dir)
             free_memory()
 
-    # tune english model using complete data from spanish, russian and burmese datasets
+    # tune english model using complete data from spanish, russian and gujarati datasets
     for language in languages[1:]:
         checkpoint_dir = "{}/xlsum_all/{}".format(output_dir, language)
         train_summarization_model(data_dir="xlsum",
@@ -131,20 +130,20 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
         save_metrics(metrics, output_dir)
         free_memory()
 
-    # tune multilingual model and evaluate it using burmese dataset
-    checkpoint_dir = "{}/multilingual_tuned_burmese".format(output_dir)
+    # tune multilingual model and evaluate it using gujarati dataset
+    checkpoint_dir = "{}/multilingual_tuned_gujarati".format(output_dir)
     train_summarization_model(data_dir="xlsum",
-                              lang_pairs="my_MM-my_MM",
+                              lang_pairs="gu_IN-gu_IN",
                               checkpoint="{}/multilingual/checkpoint_last.pt".format(output_dir),
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
                               encoder_drop_residual=encoder_drop_residual)
     free_memory()
-    metrics["my_MM_multilingual_tuned_burmese"] = \
+    metrics["gu_IN_multilingual_tuned_gujarati"] = \
         generate_and_evaluate_summaries(directory="xlsum",
-                                        source_language="my_MM",
-                                        target_language="my_MM",
-                                        lang_pairs="my_MM-my_MM",
+                                        source_language="gu_IN",
+                                        target_language="gu_IN",
+                                        lang_pairs="gu_IN-gu_IN",
                                         checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                         lenpen=lenpen,
                                         rouge_scorer=rouge_scorer)
