@@ -5,6 +5,7 @@ import torch
 
 from fairseq_cli import train
 
+torch.multiprocessing.set_sharing_strategy("file_system")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
