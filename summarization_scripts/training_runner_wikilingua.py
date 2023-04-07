@@ -11,7 +11,7 @@ min_len = "10"
 
 def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix=""):
     metrics = dict()
-    output_dir = "wiki/{}".format(prefix)
+    output_dir = "wiki_results/{}".format(prefix)
 
     # two crosslingual cases separately
     for language in languages[1:]:

@@ -11,7 +11,7 @@ rouge_scorer = "multilingual"
 
 def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix=""):
     metrics = dict()
-    output_dir = "xlsum/{}".format(prefix)
+    output_dir = "xlsum_results/{}".format(prefix)
     # every language separately
     for language in languages:
         checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
