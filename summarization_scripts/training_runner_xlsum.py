@@ -64,7 +64,7 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
 
     # few shot experiments. Tune english model using few data from spanish, russian and gujarati datasets
     for language in languages[1:]:
-        for data_size in [10, 100, 1000, 10000]:
+        for data_size, max_epoch in zip([10, 100, 1000, 10000], ["50", "35", "20", "10"]):
             if language == "gu_IN" and data_size == 10000:
                 break
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
@@ -72,7 +72,8 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                                       lang_pairs="{}-{}".format(language, language),
                                       checkpoint="{}/xlsum/en_XX/checkpoint_last.pt".format(output_dir),
                                       save_dir=checkpoint_dir,
-                                      max_epoch="5",
+                                      max_epoch=max_epoch,
+                                      validate=True,
                                       freeze_embeddings=freeze_embeddings,
                                       encoder_drop_residual=encoder_drop_residual)
             free_memory()
