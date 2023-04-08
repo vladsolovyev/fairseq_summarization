@@ -82,7 +82,7 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                                                 source_language=language,
                                                 target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
-                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                                 lenpen=lenpen,
                                                 rouge_scorer=rouge_scorer)
             shutil.rmtree(checkpoint_dir)

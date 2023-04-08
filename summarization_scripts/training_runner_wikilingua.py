@@ -77,7 +77,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                                                 source_language=language,
                                                 target_language="en_XX",
                                                 lang_pairs="{}-en_XX".format(language),
-                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                                 lenpen=lenpen,
                                                 min_len=min_len)
             shutil.rmtree(checkpoint_dir)
