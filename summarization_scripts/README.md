@@ -33,7 +33,7 @@
 - TODO: add evaluation using [flan-ul2](https://huggingface.co/google/flan-ul2)
 - [Experiments runner](./training_runner_xlsum.py)
 - First results (without some experiments and should be rerun because of new parameters in the training setup):
-  1. [Without embeddings freezing](./2023-03-06/metrics_without_freezing.csv)
+  1. [Without embeddings freezing](./xlsum_results/2023-04-08/without_freeze/no_drop/metrics.csv)
   2. [With embeddings freezing](./2023-03-07/metrics_with_freezing.csv)
 
 #### Wikilingua
