@@ -15,8 +15,8 @@ def train_summarization_model(data_dir,
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_embeddings=False,
                               encoder_drop_residual=None,
-                              max_epoch="1",
-                              validate=False):
+                              max_update="200000",
+                              validate_interval_updates="5000"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -39,9 +39,9 @@ def train_summarization_model(data_dir,
          "--lr-scheduler", "polynomial_decay",
          "--lr", "2e-05",
          "--power", "1",
-         "--end-learning-rate", "5e-10",
+         "--end-learning-rate", "5e-9",
          "--clip-norm", "0.1",
-         "--total-num-update", "80000",
+         "--total-num-update", "200000",
          "--weight-decay", "0.01",
          "--dropout", "0.1",
          "--attention-dropout", "0.1",
@@ -54,7 +54,10 @@ def train_summarization_model(data_dir,
          "--reset-meters",
          "--reset-dataloader",
          "--reset-lr-scheduler",
-         "--max-epoch", max_epoch,
+         "--max-update", max_update,
+         "--keep-best-checkpoints", "1",
+         "--no-last-checkpoints",
+         "--patience", "2",
          "--truncate-source",
          "--lang-tok-style", "mbart",
          "--num-workers", "16",
@@ -63,14 +66,10 @@ def train_summarization_model(data_dir,
          "--find-unused-parameters",
          "--no-epoch-checkpoints"]
     )
-    if validate:
-        sys.argv.extend(["--keep-best-checkpoints", "1",
-                         "--no-last-checkpoints",
-                         "--patience", "2"])
-    else:
-        sys.argv.append("--disable-validation")
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")
+    if validate_interval_updates:
+        sys.argv.extend(["--validate-interval-updates", validate_interval_updates]),
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():

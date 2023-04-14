@@ -35,7 +35,7 @@ def save_metrics(metrics, output_dir):
     new_metrics_df = pd.DataFrame.from_dict(metrics, orient='index')
     if Path(output_file).is_file():
         metrics_df = pd.read_csv(output_file, index_col=0)
-        metrics_df = metrics_df.append(new_metrics_df)
+        metrics_df = metrics_df.concat(new_metrics_df)
         metrics_df = metrics_df[~metrics_df.index.duplicated(keep='last')].sort_index()
         metrics_df.to_csv(output_file, mode="w")
     else:
