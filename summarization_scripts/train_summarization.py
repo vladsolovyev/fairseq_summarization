@@ -16,7 +16,8 @@ def train_summarization_model(data_dir,
                               freeze_embeddings=False,
                               encoder_drop_residual=None,
                               max_update="200000",
-                              validate_interval_updates="5000"):
+                              validate_interval_updates="5000",
+                              validate_interval="1"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -64,12 +65,12 @@ def train_summarization_model(data_dir,
          "--update-freq", "3",
          "--ddp-backend", "no_c10d",
          "--find-unused-parameters",
-         "--no-epoch-checkpoints"]
+         "--no-epoch-checkpoints",
+         "--validate-interval", validate_interval,
+         "--validate-interval-updates", validate_interval_updates]
     )
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")
-    if validate_interval_updates:
-        sys.argv.extend(["--validate-interval-updates", validate_interval_updates]),
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():

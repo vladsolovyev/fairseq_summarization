@@ -58,14 +58,16 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
     # few shot experiments.
     # Tune multilingual model using few data from spanish-english and russian-english datasets
     for language in languages[1:]:
-        for data_size, max_update in zip([10, 100, 1000, 10000],
-                                         ["100", "1000", "10000", "20000"]):
+        for data_size, validate_interval in zip([10, 100, 1000, 10000],
+                                                ["20", "10", "2", "1"]):
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
             train_summarization_model(data_dir="wikilingua_cross_{}".format(data_size),
                                       lang_pairs="{}-en_XX".format(language),
                                       checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                                       save_dir=checkpoint_dir,
-                                      max_update=max_update,
+                                      max_update="20000",
+                                      validate_interval=validate_interval,
+                                      validate_interval_updates="0",
                                       freeze_embeddings=freeze_embeddings,
                                       encoder_drop_residual=encoder_drop_residual)
             free_memory()
