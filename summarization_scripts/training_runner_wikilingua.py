@@ -9,7 +9,7 @@ lenpen = "1.0"
 min_len = "10"
 
 
-def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix=""):
+def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix="", freeze_encoder_layers="0"):
     metrics = dict()
     output_dir = "wiki_results/{}".format(prefix)
 
@@ -20,7 +20,8 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                                   lang_pairs="{}-en_XX".format(language),
                                   save_dir=checkpoint_dir,
                                   freeze_embeddings=freeze_embeddings,
-                                  encoder_drop_residual=encoder_drop_residual)
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers)
         free_memory()
 
         metrics["{}-en_XX".format(language)] = \
@@ -41,7 +42,8 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
-                              encoder_drop_residual=encoder_drop_residual)
+                              encoder_drop_residual=encoder_drop_residual,
+                              freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_zero".format(language)] = \
@@ -69,7 +71,8 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                                       validate_interval=validate_interval,
                                       validate_interval_updates="0",
                                       freeze_embeddings=freeze_embeddings,
-                                      encoder_drop_residual=encoder_drop_residual)
+                                      encoder_drop_residual=encoder_drop_residual,
+                                      freeze_encoder_layers=freeze_encoder_layers)
             free_memory()
             metrics["{}-en_XX_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="wikilingua_cross",
@@ -91,7 +94,8 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                                   checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
                                   freeze_embeddings=freeze_embeddings,
-                                  encoder_drop_residual=encoder_drop_residual)
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers)
         free_memory()
         metrics["{}-en_XX_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua_cross",
@@ -112,7 +116,8 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                               checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
-                              encoder_drop_residual=encoder_drop_residual)
+                              encoder_drop_residual=encoder_drop_residual,
+                              freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_tuned_all_together".format(language)] = \

@@ -82,6 +82,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         parser.add_argument('--keep-inference-langtok', action='store_true',
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
         parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings", default=False)
+        parser.add_argument('--freeze-encoder-layers', default=0, help="how many encoder layers should be frozen")
         parser.add_argument('--translate-to-lang', default="", help='translate to language')
 
         SamplingMethod.add_arguments(parser)
@@ -231,6 +232,9 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         model = super().build_model(args, from_checkpoint)
         if self.training and args.freeze_embeddings:
             freeze_embeddings(model)
+        for layer in model.encoder.layers[:int(args.freeze_encoder_layers)]:
+            for par in layer.parameters():
+                par.requires_grad = False
         return model
 
     def valid_step(self, sample, model, criterion):

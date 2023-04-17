@@ -17,7 +17,8 @@ def train_summarization_model(data_dir,
                               encoder_drop_residual=None,
                               max_update="200000",
                               validate_interval_updates="5000",
-                              validate_interval="1"):
+                              validate_interval="1",
+                              freeze_encoder_layers="0"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -67,7 +68,8 @@ def train_summarization_model(data_dir,
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
          "--validate-interval", validate_interval,
-         "--validate-interval-updates", validate_interval_updates]
+         "--validate-interval-updates", validate_interval_updates,
+         "--freeze-encoder-layers", freeze_encoder_layers]
     )
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")

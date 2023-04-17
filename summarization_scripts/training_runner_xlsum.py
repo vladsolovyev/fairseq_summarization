@@ -9,7 +9,7 @@ lenpen = "0.6"
 rouge_scorer = "multilingual"
 
 
-def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix=""):
+def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, prefix="", freeze_encoder_layers="0"):
     metrics = dict()
     output_dir = "xlsum_results/{}".format(prefix)
     # every language separately
@@ -19,7 +19,8 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                                   lang_pairs="{}-{}".format(language, language),
                                   save_dir=checkpoint_dir,
                                   freeze_embeddings=freeze_embeddings,
-                                  encoder_drop_residual=encoder_drop_residual)
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers)
         free_memory()
         metrics[language] = generate_and_evaluate_summaries(directory="xlsum",
                                                             source_language=language,
@@ -77,7 +78,8 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                                       validate_interval=validate_interval,
                                       validate_interval_updates="0",
                                       freeze_embeddings=freeze_embeddings,
-                                      encoder_drop_residual=encoder_drop_residual)
+                                      encoder_drop_residual=encoder_drop_residual,
+                                      freeze_encoder_layers=freeze_encoder_layers)
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
@@ -99,7 +101,8 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                                   checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
                                   freeze_embeddings=freeze_embeddings,
-                                  encoder_drop_residual=encoder_drop_residual)
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers)
         free_memory()
         metrics["{}_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
@@ -119,7 +122,8 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
-                              encoder_drop_residual=encoder_drop_residual)
+                              encoder_drop_residual=encoder_drop_residual,
+                              freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
     for language in languages:
         metrics["{}_multilingual".format(language)] = \
@@ -140,7 +144,8 @@ def run_xlsum_experiments(freeze_embeddings=False, encoder_drop_residual=None, p
                               checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
-                              encoder_drop_residual=encoder_drop_residual)
+                              encoder_drop_residual=encoder_drop_residual,
+                              freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
     metrics["gu_IN_multilingual_tuned_gujarati"] = \
         generate_and_evaluate_summaries(directory="xlsum",
