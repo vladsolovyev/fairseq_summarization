@@ -17,6 +17,7 @@ def main():
                                 encoder_drop_residual=encoder_drop_residual,
                                 prefix=prefix)
                 if freeze_embeddings and encoder_drop_residual is None:
+                    prefix = "{}/frozen_layers".format(prefix)
                     run_experiments(freeze_embeddings=freeze_embeddings,
                                     encoder_drop_residual=encoder_drop_residual,
                                     prefix=prefix,
