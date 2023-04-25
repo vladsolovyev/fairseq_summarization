@@ -45,9 +45,8 @@ def filter_datasets():
 
 def main():
     filter_datasets()
-    create_translated_data(datasets[1], "es")
-    create_translated_data(datasets[2], "ru")
-    create_translated_data(datasets[3], "gu")
+    for dataset, lang in zip(datasets[1:], ["es", "ru", "gu"]):
+        create_translated_data(dataset, lang)
     statistics = dict()
     for language, dataset in zip(languages, datasets):
         for data_type in data_types:
