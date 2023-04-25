@@ -1,8 +1,8 @@
-from torch import nn
+from torch import nn, tensor
 
 from fairseq.models import register_model_architecture, register_model
 from fairseq.models.bart import mbart_large_architecture, BARTModel
-from fairseq.models.transformer import TransformerEncoder
+from fairseq.models.transformer import TransformerEncoder, TransformerDecoder
 from fairseq.modules.residual_drop_transformer_layer import ResidualDropTransformerEncoderLayer
 
 
@@ -22,6 +22,10 @@ class BARTResidualDropModel(BARTModel):
     def build_encoder(cls, args, src_dict, embed_tokens):
         return ResidualDropTransformerEncoder(args, src_dict, embed_tokens)
 
+    @classmethod
+    def build_decoder(cls, args, tgt_dict, embed_tokens):
+        return ResidualDropTransformerDecoder(args, tgt_dict, embed_tokens)
+
 
 class ResidualDropTransformerEncoder(TransformerEncoder):
     def __init__(self, args, dictionary, embed_tokens):
@@ -34,6 +38,13 @@ class ResidualDropTransformerEncoder(TransformerEncoder):
     def _build_encoder_layer(self, args, layer_idx, encoder_drop_residual_at_layer=None):
         drop_residual_after_att = (layer_idx == encoder_drop_residual_at_layer)
         return ResidualDropTransformerEncoderLayer(args, drop_residual_after_att)
+
+
+class ResidualDropTransformerDecoder(TransformerDecoder):
+    def __init__(self, args, dictionary, embed_tokens):
+        super().__init__(args, dictionary, embed_tokens)
+        self.lang_dict = dict({250004: tensor(0), 250005: tensor(1), 250009: tensor(2), 250021: tensor(3)})
+        self.language_embeddings = nn.Embedding(4, args.encoder_embed_dim)
 
 
 @register_model_architecture("bart_residual_drop", "mbart_large_residual_drop")

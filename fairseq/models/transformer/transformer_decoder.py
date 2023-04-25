@@ -305,8 +305,11 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
         # Prevent torchscript exporting issue for dynamic quant embedding
         prev_output_tokens = prev_output_tokens.contiguous()
         # embed tokens and positions
-        x = self.embed_scale * self.embed_tokens(prev_output_tokens)
-
+        x = self.embed_tokens(prev_output_tokens)
+        if self.cfg.use_language_embeddings:
+            for i in range(len(prev_output_tokens[:, 0])):
+                x[i] = x[i] + self.language_embeddings(self.lang_dict[prev_output_tokens[i, 0].item()])
+        x = self.embed_scale * x
         if self.quant_noise is not None:
             x = self.quant_noise(x)
 

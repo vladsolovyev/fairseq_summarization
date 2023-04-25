@@ -14,7 +14,8 @@ def generate_and_evaluate_summaries(directory,
                                     ngram="2",
                                     min_len="0",
                                     translate_to_lang="",
-                                    rouge_scorer="huggingface"):
+                                    rouge_scorer="huggingface",
+                                    use_language_embeddings=False,):
     sys.argv.extend(
         [directory,
          "--path", checkpoint,
@@ -46,6 +47,8 @@ def generate_and_evaluate_summaries(directory,
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")
+    if use_language_embeddings:
+        sys.argv.append("--use-language-embeddings")
     results = generate.cli_main().scores
     print("Checkpoint: {}, languages: {}-{}, results: {}".format(
         checkpoint, source_language, target_language, results))
