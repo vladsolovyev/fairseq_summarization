@@ -14,11 +14,14 @@ def train_summarization_model(data_dir,
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_embeddings=False,
+                              freeze_decoder_layers=False,
+                              use_language_embeddings=False,
                               encoder_drop_residual=None,
-                              max_update="200000",
+                              max_update="60000",
                               validate_interval_updates="5000",
                               validate_interval="1",
-                              freeze_encoder_layers="0"):
+                              freeze_encoder_layers="0",
+                              num_workers="16"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -33,8 +36,7 @@ def train_summarization_model(data_dir,
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--lang-pairs", lang_pairs,
-         "--criterion", "label_smoothed_cross_entropy",
-         "--label-smoothing", "0.1",
+         "--criterion", "cross_entropy",
          "--optimizer", "adam",
          "--adam-eps", "1e-08",
          "--adam-betas", "(0.9, 0.999)",
@@ -43,7 +45,7 @@ def train_summarization_model(data_dir,
          "--power", "1",
          "--end-learning-rate", "5e-9",
          "--clip-norm", "0.1",
-         "--total-num-update", "200000",
+         "--total-num-update", "60000",
          "--weight-decay", "0.01",
          "--dropout", "0.1",
          "--attention-dropout", "0.1",
@@ -56,14 +58,14 @@ def train_summarization_model(data_dir,
          "--reset-meters",
          "--reset-dataloader",
          "--reset-lr-scheduler",
-         "--max-update", max_update,
+         "--max-epoch", max_update,
          "--keep-best-checkpoints", "1",
          "--no-last-checkpoints",
-         "--patience", "2",
+         "--patience", "1",
          "--truncate-source",
          "--lang-tok-style", "mbart",
-         "--num-workers", "16",
-         "--update-freq", "3",
+         "--num-workers", num_workers,
+         "--update-freq", "16",
          "--ddp-backend", "no_c10d",
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
@@ -73,6 +75,10 @@ def train_summarization_model(data_dir,
     )
     if freeze_embeddings:
         sys.argv.append("--freeze-embeddings")
+    if freeze_decoder_layers:
+        sys.argv.append("--freeze-decoder-layers")
+    if use_language_embeddings:
+        sys.argv.append("--use-language-embeddings")
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():

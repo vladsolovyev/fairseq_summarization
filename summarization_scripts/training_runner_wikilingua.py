@@ -43,17 +43,19 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
                               encoder_drop_residual=encoder_drop_residual,
-                              freeze_encoder_layers=freeze_encoder_layers)
+                              freeze_encoder_layers=freeze_encoder_layers,
+                              use_language_embeddings=True)
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_zero".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua_cross",
                                             source_language=language,
                                             target_language="en_XX",
-                                            lang_pairs="{}-en_XX".format(language),
+                                            lang_pairs="en_XX-en_XX",
                                             checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
-                                            min_len=min_len)
+                                            min_len=min_len,
+                                            use_language_embeddings=True)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -61,7 +63,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
     # Tune multilingual model using few data from spanish-english and russian-english datasets
     for language in languages[1:]:
         for data_size, validate_interval in zip([10, 100, 1000, 10000],
-                                                ["20", "10", "2", "1"]):
+                                                ["10", "5", "2", "1"]):
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
             train_summarization_model(data_dir="wikilingua_cross_{}".format(data_size),
                                       lang_pairs="{}-en_XX".format(language),
@@ -72,7 +74,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                                       validate_interval_updates="0",
                                       freeze_embeddings=freeze_embeddings,
                                       encoder_drop_residual=encoder_drop_residual,
-                                      freeze_encoder_layers=freeze_encoder_layers)
+                                      num_workers="1")
             free_memory()
             metrics["{}-en_XX_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="wikilingua_cross",
@@ -94,8 +96,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                                   checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
                                   freeze_embeddings=freeze_embeddings,
-                                  encoder_drop_residual=encoder_drop_residual,
-                                  freeze_encoder_layers=freeze_encoder_layers)
+                                  encoder_drop_residual=encoder_drop_residual)
         free_memory()
         metrics["{}-en_XX_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua_cross",
@@ -116,8 +117,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
                               checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir,
                               freeze_embeddings=freeze_embeddings,
-                              encoder_drop_residual=encoder_drop_residual,
-                              freeze_encoder_layers=freeze_encoder_layers)
+                              encoder_drop_residual=encoder_drop_residual)
     free_memory()
     for language in languages[1:]:
         metrics["{}-en_XX_tuned_all_together".format(language)] = \
