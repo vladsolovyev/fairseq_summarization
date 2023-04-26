@@ -51,7 +51,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
             generate_and_evaluate_summaries(directory="wikilingua_cross",
                                             source_language=language,
                                             target_language="en_XX",
-                                            lang_pairs="en_XX-en_XX",
+                                            lang_pairs="{}-en_XX".format(language),
                                             checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len,

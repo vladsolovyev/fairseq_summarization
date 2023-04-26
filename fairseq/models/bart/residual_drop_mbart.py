@@ -1,3 +1,4 @@
+import torch
 from torch import nn, tensor
 
 from fairseq.models import register_model_architecture, register_model
@@ -43,7 +44,12 @@ class ResidualDropTransformerEncoder(TransformerEncoder):
 class ResidualDropTransformerDecoder(TransformerDecoder):
     def __init__(self, args, dictionary, embed_tokens):
         super().__init__(args, dictionary, embed_tokens)
-        self.lang_dict = dict({250004: tensor(0), 250005: tensor(1), 250009: tensor(2), 250021: tensor(3)})
+        if torch.cuda.is_available():
+            self.lang_dict = dict({250004: tensor(0).cuda(), 250005: tensor(1).cuda(),
+                                   250009: tensor(2).cuda(), 250021: tensor(3).cuda()})
+        else:
+            self.lang_dict = dict({250004: tensor(0), 250005: tensor(1),
+                                   250009: tensor(2), 250021: tensor(3)})
         self.language_embeddings = nn.Embedding(4, args.encoder_embed_dim)
 
 
