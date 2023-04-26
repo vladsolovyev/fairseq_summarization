@@ -297,6 +297,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
                 prev_output_tokens, incremental_state=incremental_state
             )
 
+        tgt_langs_tokens = prev_output_tokens[:, 0]
         if incremental_state is not None:
             prev_output_tokens = prev_output_tokens[:, -1:]
             if positions is not None:
@@ -308,7 +309,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
         x = self.embed_tokens(prev_output_tokens)
         if self.cfg.use_language_embeddings:
             for i in range(len(prev_output_tokens[:, 0])):
-                x[i] = x[i] + self.language_embeddings(self.lang_dict[prev_output_tokens[i, 0].item()])
+                x[i] = x[i] + self.language_embeddings(self.lang_dict[tgt_langs_tokens[i].item()])
         x = self.embed_scale * x
         if self.quant_noise is not None:
             x = self.quant_noise(x)
