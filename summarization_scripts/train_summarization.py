@@ -15,7 +15,8 @@ def train_summarization_model(data_dir,
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_embeddings=False,
                               freeze_decoder_layers=False,
-                              use_language_embeddings=False,
+                              use_language_embeddings=True,
+                              use_language_embeddings_encoder_output=True,
                               encoder_drop_residual=None,
                               max_update="60000",
                               validate_interval_updates="5000",
@@ -79,6 +80,8 @@ def train_summarization_model(data_dir,
         sys.argv.append("--freeze-decoder-layers")
     if use_language_embeddings:
         sys.argv.append("--use-language-embeddings")
+    if use_language_embeddings_encoder_output:
+        sys.argv.append("--use-language-embeddings-encoder-output")
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():

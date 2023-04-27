@@ -310,6 +310,9 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
         if self.cfg.use_language_embeddings:
             for i in range(len(prev_output_tokens[:, 0])):
                 x[i] = x[i] + self.language_embeddings(self.lang_dict[tgt_langs_tokens[i].item()])
+        if self.cfg.use_language_embeddings_encoder_output:
+            for i in range(len(prev_output_tokens[:, 0])):
+                enc[:, i, :] = enc[:, i, :] + self.language_embeddings_encoder_output(self.lang_dict[tgt_langs_tokens[i].item()])
         x = self.embed_scale * x
         if self.quant_noise is not None:
             x = self.quant_noise(x)

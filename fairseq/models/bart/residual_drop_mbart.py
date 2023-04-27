@@ -51,6 +51,7 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
             self.lang_dict = dict({250004: tensor(0), 250005: tensor(1),
                                    250009: tensor(2), 250021: tensor(3)})
         self.language_embeddings = nn.Embedding(4, args.encoder_embed_dim)
+        self.language_embeddings_encoder_output = nn.Embedding(4, args.encoder_embed_dim)
 
 
 @register_model_architecture("bart_residual_drop", "mbart_large_residual_drop")

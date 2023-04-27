@@ -15,7 +15,8 @@ def generate_and_evaluate_summaries(directory,
                                     min_len="0",
                                     translate_to_lang="",
                                     rouge_scorer="huggingface",
-                                    use_language_embeddings=False,):
+                                    use_language_embeddings=False,
+                                    use_language_embeddings_encoder_output=False):
     sys.argv.extend(
         [directory,
          "--path", checkpoint,
@@ -49,6 +50,8 @@ def generate_and_evaluate_summaries(directory,
         sys.argv.append("--fp16")
     if use_language_embeddings:
         sys.argv.append("--use-language-embeddings")
+    if use_language_embeddings_encoder_output:
+        sys.argv.append("--use-language-embeddings-encoder-output")
     results = generate.cli_main().scores
     print("Checkpoint: {}, languages: {}-{}, results: {}".format(
         checkpoint, source_language, target_language, results))
