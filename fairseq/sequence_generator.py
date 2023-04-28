@@ -285,6 +285,10 @@ class SequenceGenerator(nn.Module):
         encoder_outs = self.model.reorder_encoder_out(encoder_outs, new_order)
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
+        model = self.model.single_model
+        if model.cfg.use_language_embeddings_encoder_output:
+            encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + \
+                                                model.decoder.language_embeddings_encoder_output(model.decoder.lang_dict[bos_token])
 
         # initialize buffers
         scores = (
