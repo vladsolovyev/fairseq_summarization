@@ -7,7 +7,8 @@ from sentencepiece import SentencePieceProcessor
 
 from summarization_datasets.utils import write_to_file
 
-data_types = ["train", "validation", "test"]
+data_types = ["train", "sampled_validation", "test"]
+new_data_types = ["train", "validation", "test"]
 columns = ["source", "target"]
 new_columns = ["input_text", "summary"]
 mono_languages = ["en_XX", "es_XX", "ru_RU"]
@@ -23,7 +24,7 @@ spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 def main():
     statistics = dict()
     for language, dataset in zip(crosslingual_source_languages, datasets_crosslingual):
-        for data_type in data_types:
+        for data_type, new_data_type in zip(data_types, new_data_types):
             dataset[data_type] = dataset[data_type].\
                 filter(lambda sample: sample["target_language"] == "en" and sample["source_language"] != "en")
             dataset_statistics = dict()
@@ -42,12 +43,12 @@ def main():
                         output_dir = "wikilingua_cross_{}-en_XX_{}".format(language, data_size)
                         Path(output_dir).mkdir(exist_ok=True)
                         write_to_file(encoded_texts[:data_size],
-                                      "{}/{}.{}.{}".format(output_dir, data_type, new_column, lang))
-                write_to_file(encoded_texts, "wikilingua_cross_{}-en_XX/{}.{}.{}".format(language, data_type, new_column, lang))
+                                      "{}/{}.{}.{}".format(output_dir, new_data_type, new_column, lang))
+                write_to_file(encoded_texts, "wikilingua_cross_{}-en_XX/{}.{}.{}".format(language, new_data_type, new_column, lang))
             statistics["{}-en_XX-{}".format(language, data_type)] = dataset_statistics
 
     for language, dataset in zip(mono_languages, datasets_monolingual):
-        for data_type in data_types[:2]:
+        for data_type, new_data_type in zip(data_types[:2], new_data_types[:2]):
             dataset_statistics = dict()
             dataset_statistics["samples_num"] = len(dataset[data_type])
             for column, new_column in zip(columns, new_columns):
@@ -58,7 +59,7 @@ def main():
                     np.mean([len(encoded_sample) for encoded_sample in encoded_column])
                 encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_column]
                 Path("wikilingua_mono").mkdir(exist_ok=True)
-                write_to_file(encoded_texts, "wikilingua_mono/{}.{}.{}".format(data_type, new_column, language))
+                write_to_file(encoded_texts, "wikilingua_mono/{}.{}.{}".format(new_data_type, new_column, language))
             statistics["{}-{}-{}".format(language, language, data_type)] = dataset_statistics
 
     statistics_df = pd.DataFrame.from_dict(statistics, orient="index")
