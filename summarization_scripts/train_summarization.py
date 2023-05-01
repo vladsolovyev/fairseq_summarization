@@ -13,12 +13,11 @@ def train_summarization_model(data_dir,
                               save_dir="default",
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
-                              freeze_embeddings=False,
                               freeze_decoder_layers=False,
-                              use_language_embeddings=True,
-                              use_language_embeddings_encoder_output=True,
+                              use_language_embeddings=False,
+                              use_language_embeddings_encoder_output=False,
                               encoder_drop_residual=None,
-                              max_update="60000",
+                              max_update="120000",
                               validate_interval_updates="5000",
                               validate_interval="1",
                               freeze_encoder_layers="0",
@@ -46,7 +45,7 @@ def train_summarization_model(data_dir,
          "--power", "1",
          "--end-learning-rate", "5e-9",
          "--clip-norm", "0.1",
-         "--total-num-update", "60000",
+         "--total-num-update", "120000",
          "--weight-decay", "0.01",
          "--dropout", "0.1",
          "--attention-dropout", "0.1",
@@ -73,10 +72,9 @@ def train_summarization_model(data_dir,
          "--validate-after-updates", "5",
          "--validate-interval", validate_interval,
          "--validate-interval-updates", validate_interval_updates,
+         "--freeze-embeddings",
          "--freeze-encoder-layers", freeze_encoder_layers]
     )
-    if freeze_embeddings:
-        sys.argv.append("--freeze-embeddings")
     if freeze_decoder_layers:
         sys.argv.append("--freeze-decoder-layers")
     if use_language_embeddings:
