@@ -327,7 +327,7 @@ def train(
         trainer.lr_scheduler.total_num_update = total_num_update
     if len(progress) * cfg.dataset.validate_interval < cfg.dataset.validate_interval_updates:
         cfg.dataset.validate_interval_updates = 0
-    else:
+    elif cfg.dataset.validate_interval_updates > 0:
         cfg.dataset.validate_interval = math.inf
     trainer.begin_epoch(epoch_itr.epoch)
 
