@@ -70,6 +70,7 @@ def train_summarization_model(data_dir,
          "--ddp-backend", "no_c10d",
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
+         "--validate-after-updates", "5",
          "--validate-interval", validate_interval,
          "--validate-interval-updates", validate_interval_updates,
          "--freeze-encoder-layers", freeze_encoder_layers]
