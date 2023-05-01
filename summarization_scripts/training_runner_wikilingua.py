@@ -65,7 +65,7 @@ def run_wikilingua_experiments(freeze_embeddings=False, encoder_drop_residual=No
     # Tune multilingual model using few data from spanish-english and russian-english datasets
     for language in languages[1:]:
         for data_size, validate_interval in zip([10, 100, 1000, 10000],
-                                                ["10", "5", "2", "1"]):
+                                                ["200", "50", "5", "1"]):
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
             train_summarization_model(data_dir="wikilingua_cross_{}".format(data_size),
                                       lang_pairs="{}-en_XX".format(language),
