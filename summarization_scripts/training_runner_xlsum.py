@@ -12,26 +12,45 @@ rouge_scorer = "multilingual"
 def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_layers="0"):
     metrics = dict()
     output_dir = "xlsum_results/{}".format(prefix)
-    # every language separately
+
+    # train baseline model and evaluate using english, spanish, russian and gujarati
+    checkpoint_dir = "{}/baseline".format(output_dir)
+    train_summarization_model(data_dir="xlsum",
+                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
+                              save_dir=checkpoint_dir,
+                              encoder_drop_residual=encoder_drop_residual,
+                              freeze_encoder_layers=freeze_encoder_layers)
+    free_memory()
     for language in languages:
-        checkpoint_dir = "{}/xlsum/{}".format(output_dir, language)
-        train_summarization_model(data_dir="xlsum",
-                                  lang_pairs="{}-{}".format(language, language),
-                                  save_dir=checkpoint_dir,
-                                  encoder_drop_residual=encoder_drop_residual,
-                                  freeze_encoder_layers=freeze_encoder_layers)
-        free_memory()
-        metrics[language] = generate_and_evaluate_summaries(directory="xlsum",
-                                                            source_language=language,
-                                                            target_language=language,
-                                                            lang_pairs="{}-{}".format(language, language),
-                                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
-                                                            lenpen=lenpen,
-                                                            rouge_scorer=rouge_scorer)
-        if language != "en_XX":
-            shutil.rmtree(checkpoint_dir)
+        metrics["{}_baseline".format(language)] = \
+            generate_and_evaluate_summaries(directory="xlsum",
+                                            source_language=language,
+                                            target_language=language,
+                                            lang_pairs="{}-{}".format(language, language),
+                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
+                                            lenpen=lenpen,
+                                            rouge_scorer=rouge_scorer)
         save_metrics(metrics, output_dir)
         free_memory()
+    shutil.rmtree("{}/baseline".format(output_dir))
+
+    # train a model and evaluate it using only english data
+    checkpoint_dir = "{}/xlsum/en_XX".format(output_dir)
+    train_summarization_model(data_dir="xlsum",
+                              lang_pairs="en_XX-en_XX",
+                              save_dir=checkpoint_dir,
+                              encoder_drop_residual=encoder_drop_residual,
+                              freeze_encoder_layers=freeze_encoder_layers)
+    free_memory()
+    metrics["en_XX"] = generate_and_evaluate_summaries(directory="xlsum",
+                                                       source_language="en_XX",
+                                                       target_language="en_XX",
+                                                       lang_pairs="en_XX-en_XX",
+                                                       checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
+                                                       lenpen=lenpen,
+                                                       rouge_scorer=rouge_scorer)
+    save_metrics(metrics, output_dir)
+    free_memory()
 
     # zero shot. Evaluate spanish, russian and gujarati datasets using english model
     for language in languages[1:]:
@@ -65,7 +84,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
     # few shot experiments. Tune english model using few data from spanish, russian and gujarati datasets
     for language in languages[1:]:
         for data_size, validate_interval in zip([10, 100, 1000, 10000],
-                                                ["5", "2", "1", "1"]):
+                                                ["5", "3", "1", "1"]):
             if language == "gu_IN" and data_size == 10000:
                 break
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
@@ -76,8 +95,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
                                       max_update="20000",
                                       validate_interval=validate_interval,
                                       validate_interval_updates="0",
-                                      encoder_drop_residual=encoder_drop_residual,
-                                      num_workers="1")
+                                      encoder_drop_residual=encoder_drop_residual)
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
@@ -113,7 +131,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
         free_memory()
 
     # train using english, spanish and russian together and evaluate with all 4 languages
-    checkpoint_dir = "{}/multilingual".format(output_dir)
+    checkpoint_dir = "{}/multiEnEsRu".format(output_dir)
     train_summarization_model(data_dir="xlsum",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
                               save_dir=checkpoint_dir,
@@ -121,7 +139,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
                               freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
     for language in languages:
-        metrics["{}_multilingual".format(language)] = \
+        metrics["{}_multiEnEsRu".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language=language,
                                             target_language=language,
@@ -133,14 +151,14 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
         free_memory()
 
     # tune multilingual model and evaluate it using gujarati dataset
-    checkpoint_dir = "{}/multilingual_tuned_gujarati".format(output_dir)
+    checkpoint_dir = "{}/multiEnEsRu_tuned_gujarati".format(output_dir)
     train_summarization_model(data_dir="xlsum",
                               lang_pairs="gu_IN-gu_IN",
-                              checkpoint="{}/multilingual/checkpoint_best.pt".format(output_dir),
+                              checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual)
     free_memory()
-    metrics["gu_IN_multilingual_tuned_gujarati"] = \
+    metrics["gu_IN_multiEnEsRu_tuned_gujarati"] = \
         generate_and_evaluate_summaries(directory="xlsum",
                                         source_language="gu_IN",
                                         target_language="gu_IN",
@@ -153,7 +171,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
 
     shutil.rmtree(checkpoint_dir)
     shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
-    shutil.rmtree("{}/multilingual".format(output_dir))
+    shutil.rmtree("{}/multiEnEsRu".format(output_dir))
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ from summarization_scripts.training_runner_xlsum import run_xlsum_experiments
 def main():
     date = datetime.today().strftime('%Y-%m-%d')
     for run_experiments in [run_xlsum_experiments, run_wikilingua_experiments]:
-        for encoder_drop_residual in ["4", None]:
+        for encoder_drop_residual in [None, "3", "4", "5"]:
             drop_prefix = "drop_{}".format(encoder_drop_residual) if encoder_drop_residual else "no_drop"
             prefix = "{}/{}".format(date, drop_prefix)
             run_experiments(encoder_drop_residual=encoder_drop_residual,
