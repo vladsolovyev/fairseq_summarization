@@ -24,6 +24,13 @@ logger = logging.getLogger(__name__)
 # to the main thread.
 _sentinel = object()
 
+sharing_strategy = "file_system"
+torch.multiprocessing.set_sharing_strategy(sharing_strategy)
+
+
+def set_worker_sharing_strategy(worker_id: int) -> None:
+    torch.multiprocessing.set_sharing_strategy(sharing_strategy)
+
 
 class CountingIterator(object):
     """Wrapper around an iterable that maintains the iteration count.
@@ -218,9 +225,9 @@ class StreamingEpochBatchIterator(EpochBatchIterating):
             collate_fn=self.collate_fn,
             num_workers=self.num_workers,
             timeout=self.timeout,
-            worker_init_fn=worker_init_fn,
+            worker_init_fn=set_worker_sharing_strategy,
             pin_memory=True,
-            persistent_workers=self.persistent_workers,
+            persistent_workers=self.persistent_workers
         )
 
         # Wrap with a BufferedIterator if needed
@@ -508,6 +515,7 @@ class EpochBatchIterator(EpochBatchIterating):
                 timeout=self.timeout,
                 pin_memory=True,
                 persistent_workers=self.persistent_workers,
+                worker_init_fn=set_worker_sharing_strategy
             )
 
             if self.reuse_dataloader:
@@ -872,6 +880,7 @@ class GroupedEpochBatchIterator(EpochBatchIterator):
             batch_sampler=batches[offset:],
             num_workers=self.num_workers,
             persistent_workers=self.persistent_workers,
+            worker_init_fn=set_worker_sharing_strategy
         )
         if self.buffer_size > 0:
             itr = BufferedIterator(self.buffer_size, itr)
