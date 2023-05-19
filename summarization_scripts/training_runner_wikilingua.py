@@ -38,7 +38,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
     # english, spanish, russian together, but monolingual data
     checkpoint_dir = "{}/monolingual".format(output_dir)
     train_summarization_model(data_dir="wikilingua",
-                              lang_pairs=",".join(["{}-{}".format(language) for language in languages[1:]]),
+                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[1:]]),
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers)
