@@ -86,7 +86,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
         for data_size, validate_interval in zip([10, 100, 1000, 10000],
                                                 ["5", "3", "1", "1"]):
             if language == "gu_IN" and data_size == 10000:
-                break
+                continue
             checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
             train_summarization_model(data_dir="xlsum_{}".format(data_size),
                                       lang_pairs="{}-{}".format(language, language),
@@ -95,7 +95,8 @@ def run_xlsum_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_
                                       max_update="20000",
                                       validate_interval=validate_interval,
                                       validate_interval_updates="0",
-                                      encoder_drop_residual=encoder_drop_residual)
+                                      encoder_drop_residual=encoder_drop_residual,
+                                      num_workers="1")
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
