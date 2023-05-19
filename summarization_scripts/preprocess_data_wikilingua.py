@@ -21,7 +21,8 @@ def main():
                         add_test_data=True,
                         add_validation_data=True)
     for language in ["en_XX", "es_XX", "ru_RU", "de_DE"]:
-        preprocess_data(language, language, "wikilingua", "wikilingua", add_validation_data=True)
+        preprocess_data(language, language, "wikilingua_{}-{}".format(language, language),
+                        "wikilingua", add_validation_data=True)
     for language in ["en_XX", "es_XX", "ru_RU"]:
         preprocess_data(language,
                         "de_DE",
