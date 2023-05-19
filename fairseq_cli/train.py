@@ -15,6 +15,7 @@ import sys
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from fairseq.optim.lr_scheduler.polynomial_decay_schedule import PolynomialDecayLRSchedule
+from fairseq.trainer_multiple_optimizers import TrainerMultiple
 
 # We need to setup root logger before importing any fairseq libraries.
 logging.basicConfig(
@@ -147,7 +148,10 @@ def main(cfg: FairseqConfig) -> None:
 
     # Build trainer
     if cfg.common.model_parallel_size == 1:
-        trainer = Trainer(cfg, task, model, criterion, quantizer)
+        if getattr(cfg.task, "task") == "translation_multi_simple_epoch_task_with_adversarial_loss":
+            trainer = TrainerMultiple(cfg, task, model, criterion, quantizer)
+        else:
+            trainer = Trainer(cfg, task, model, criterion, quantizer)
     else:
         trainer = MegatronTrainer(cfg, task, model, criterion)
     logger.info(
