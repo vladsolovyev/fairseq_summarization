@@ -3,11 +3,12 @@ from summarization_scripts.utils import preprocess_data
 
 def main():
     for language in ["en_XX", "es_XX", "ru_RU", "gu_IN"]:
+        preprocess_data(language, language, "xlsum", "xlsum", add_validation_data=True, add_test_data=True)
+    for language in ["es_XX", "ru_RU", "gu_IN"]:
         for directory in ["xlsum_10", "xlsum_100", "xlsum_1000"]:
             preprocess_data(language, language, directory, directory)
             preprocess_data(language, language, "xlsum", directory, add_validation_data=True, add_train_data=False)
-        preprocess_data(language, language, "xlsum", "xlsum", add_validation_data=True, add_test_data=True)
-    for language in ["en_XX", "es_XX", "ru_RU"]:
+    for language in ["es_XX", "ru_RU"]:
         preprocess_data(language, language, "xlsum_10000", "xlsum_10000")
         preprocess_data(language, language, "xlsum", "xlsum_10000", add_validation_data=True, add_train_data=False)
     for translation_language in ["es", "ru", "gu"]:
