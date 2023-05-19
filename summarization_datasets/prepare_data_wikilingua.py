@@ -48,8 +48,8 @@ def main():
 
     for language, dataset in zip(mono_languages, datasets_monolingual):
         for data_type, new_data_type in zip(data_types[:2], new_data_types[:2]):
-            statistics["{}-{}-{}".format(data_type)] = \
-                encode_dataset_and_create_statistics(dataset_name, dataset, language, language, new_data_type, columns)
+            statistics["{}-{}-{}".format(language, language, data_type)] = \
+                encode_dataset_and_create_statistics(dataset_name, dataset[data_type], language, language, new_data_type, columns)
 
     statistics_df = pd.DataFrame.from_dict(statistics, orient="index")
     statistics_df.to_csv("stat_wikilingua.txt")
