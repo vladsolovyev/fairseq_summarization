@@ -93,7 +93,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                             reduce=True):
         encoder_classification_out = net_output[1]["classification_out"]
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)  # softmax
-        target = net_input["src_tokens"][:, -1].apply_(lambda x: lang_dict[x])
+        target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]])
         lprobs, target = lprobs.view(-1, lprobs.size(-1)), target.view(-1)
 
         loss, nll_loss = label_smoothed_nll_loss(
