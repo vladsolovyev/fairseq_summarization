@@ -924,7 +924,7 @@ class TrainerMultiple(object):
 
         overflow = False
         optimizers = [self._optimizer, self._optimizer_classifier]
-        losses = [loss - classifier_loss, classifier_loss]
+        losses = [loss - 0.2 * classifier_loss if self.get_num_updates() > 5000 else loss, classifier_loss]
         for i in range(len(optimizers)):
             optimizer = optimizers[i]
             loss = losses[i]
