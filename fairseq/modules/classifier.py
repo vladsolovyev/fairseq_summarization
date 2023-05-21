@@ -17,27 +17,9 @@ class ClassificationLayer(nn.Module):
         self.dropout = FairseqDropout(
             args.dropout, module_name=self.__class__.__name__
         )
-        self.grad_reversal_scaling_factor = args.grad_reversal_scaling_factor
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
         return x
-
-
-class GradReverse(torch.autograd.Function):
-    scale = 1.0
-
-    @staticmethod
-    def forward(self, x):
-        return x.view_as(x)
-
-    @staticmethod
-    def backward(self, grad_output):
-        return GradReverse.scale * grad_output.neg()
-
-
-def grad_reverse(x, scale=1.0):
-    GradReverse.scale = scale
-    return GradReverse.apply(x)
