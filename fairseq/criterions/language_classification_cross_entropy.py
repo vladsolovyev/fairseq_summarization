@@ -16,9 +16,10 @@ from fairseq.criterions import register_criterion
 from fairseq.criterions.label_smoothed_cross_entropy import label_smoothed_nll_loss, LabelSmoothedCrossEntropyCriterion
 
 if torch.cuda.is_available():
-    lang_dict = dict({250004: tensor(0).cuda(), 250005: tensor(1).cuda(), 250021: tensor(2).cuda()})
+    lang_dict = dict({250004: tensor(1).cuda(), 250005: tensor(2).cuda(), 250021: tensor(3).cuda()})
 else:
-    lang_dict = dict({250004: tensor(0), 250005: tensor(1), 250021: tensor(2)})
+    lang_dict = dict({250004: tensor(1), 250005: tensor(2), 250021: tensor(3)})
+
 
 @register_criterion("language_classification_cross_entropy")
 class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCriterion):
@@ -92,8 +93,15 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                             net_output,
                                             reduce=True):
         encoder_classification_out = net_output[1]["classification_out"]
+        max_len = encoder_classification_out.shape[0]
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)  # softmax
-        target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]])
+        if torch.cuda.is_available():
+            target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]]).cuda()
+        else:
+            target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]])
+        target = target.repeat(max_len, 1)
+        src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
+        target[src_pad_idx] = 0  # padding label
         lprobs, target = lprobs.view(-1, lprobs.size(-1)), target.view(-1)
 
         loss, nll_loss = label_smoothed_nll_loss(

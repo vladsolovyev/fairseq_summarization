@@ -53,7 +53,7 @@ class LanguageClassificationTransformerEncoder(ResidualDropTransformerEncoder):
         self.language_classifier = ClassificationLayer(args=args,
                                                        input_dim=args.encoder_embed_dim,
                                                        middle_dim=args.classifier_middle_layer_size,
-                                                       output_dim=3)
+                                                       output_dim=4)
 
     def forward_scriptable(
             self,

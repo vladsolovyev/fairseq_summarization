@@ -12,21 +12,17 @@ from fairseq.modules.fairseq_dropout import FairseqDropout
 class ClassificationLayer(nn.Module):
     def __init__(self, args, input_dim, middle_dim, output_dim):
         super(ClassificationLayer, self).__init__()
-        self.lstm = torch.nn.LSTM(input_dim, middle_dim, batch_first=True)
-        self.fc = nn.Linear(middle_dim, output_dim)
+        self.fc1 = nn.Linear(input_dim, middle_dim)
+        self.fc2 = nn.Linear(middle_dim, output_dim)
         self.dropout = FairseqDropout(
             args.dropout, module_name=self.__class__.__name__
         )
         self.grad_reversal_scaling_factor = args.grad_reversal_scaling_factor
 
     def forward(self, x):
-        if self.training:   # Gradient reversal on input to classifier
-            x = grad_reverse(x, self.grad_reversal_scaling_factor)
-
-        x, _ = self.lstm(x)
-        x = x[-1, :, :]
+        x = self.fc1(x)
         x = self.dropout(x)
-        x = self.fc(x)
+        x = self.fc2(x)
         return x
 
 
