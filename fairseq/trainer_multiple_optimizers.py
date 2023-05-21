@@ -845,8 +845,6 @@ class TrainerMultiple(object):
                         sample=sample,
                         model=self.model,
                         criterion=self.criterion,
-                        optimizer=self._optimizer,
-                        optimizer_classifier=self._optimizer_classifier,
                         update_num=self.get_num_updates(),
                         ignore_grad=is_dummy_batch,
                         **extra_kwargs,
@@ -924,7 +922,7 @@ class TrainerMultiple(object):
 
         overflow = False
         optimizers = [self._optimizer, self._optimizer_classifier]
-        losses = [loss - 0.2 * classifier_loss if self.get_num_updates() > 5000 else loss, classifier_loss]
+        losses = [loss - classifier_loss, classifier_loss]
         for i in range(len(optimizers)):
             optimizer = optimizers[i]
             loss = losses[i]

@@ -9,7 +9,7 @@ lenpen = "1.0"
 min_len = "10"
 
 
-def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_layers="0"):
+def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_encoder_layers="0", use_adversarial_loss=False):
     metrics = dict()
     output_dir = "wiki_results/{}".format(prefix)
 
@@ -36,20 +36,29 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
         free_memory()
 
     # english, spanish, russian together, but monolingual data
-    checkpoint_dir = "{}/monolingual".format(output_dir)
+    monolingual_checkpoint_dir = "{}/monolingual".format(output_dir)
     train_summarization_model(data_dir="wikilingua",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[1:]]),
-                              save_dir=checkpoint_dir,
+                              save_dir=monolingual_checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
+    if use_adversarial_loss:
+        monolingual_checkpoint_dir = "{}/monolingual_with_classifier".format(output_dir)
+        train_summarization_model(data_dir="wikilingua",
+                                  lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[1:]]),
+                                  checkpoint="{}/monolingual/checkpoint_best.pt".format(output_dir),
+                                  save_dir=monolingual_checkpoint_dir,
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers,
+                                  use_adversarial_loss=True)
     for language in languages[2:]:
         metrics["{}_monolingual".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language,
                                             target_language="en_XX",
                                             lang_pairs="{}-en_XX".format(language),
-                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
+                                            checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len)
         save_metrics(metrics, output_dir)
@@ -63,7 +72,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
             checkpoint_dir = "{}/wikilingua_{}/{}-en_XX".format(output_dir, data_size, language)
             train_summarization_model(data_dir="wikilingua_{}".format(data_size),
                                       lang_pairs="{}-en_XX".format(language),
-                                      checkpoint="{}/monolingual/checkpoint_best.pt".format(output_dir),
+                                      checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                       save_dir=checkpoint_dir,
                                       max_update="20000",
                                       validate_interval=validate_interval,
@@ -88,7 +97,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
         checkpoint_dir = "{}/wikilingua_all/{}-en_XX".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua",
                                   lang_pairs="{}-en_XX".format(language),
-                                  checkpoint="{}/monolingual/checkpoint_best.pt".format(output_dir),
+                                  checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual)
         free_memory()
@@ -103,6 +112,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
         free_memory()
+    shutil.rmtree(monolingual_checkpoint_dir)
 
     # 1-to-1 case with english data
     checkpoint_dir = "{}/1-to-1".format(output_dir)

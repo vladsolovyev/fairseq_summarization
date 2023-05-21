@@ -16,7 +16,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         assert args.encoder_langtok == "src"
 
     def train_step_with_classifier(
-            self, sample, model, criterion, optimizer, optimizer_classifier, update_num, ignore_grad=False
+            self, sample, model, criterion, update_num, ignore_grad=False
     ):
         model.train()
         model.set_num_updates(update_num)
@@ -33,4 +33,4 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         with torch.no_grad():
             loss, classifier_loss, sample_size, logging_output = \
                 criterion(model, sample)
-        return loss - 0.2 * classifier_loss, sample_size, logging_output
+        return -classifier_loss, sample_size, logging_output

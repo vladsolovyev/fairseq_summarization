@@ -17,8 +17,11 @@ class ClassificationLayer(nn.Module):
         self.dropout = FairseqDropout(
             args.dropout, module_name=self.__class__.__name__
         )
+        self.clone_input = args.use_language_embeddings_encoder_output
 
     def forward(self, x):
+        if self.clone_input:
+            x = x.clone()
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)

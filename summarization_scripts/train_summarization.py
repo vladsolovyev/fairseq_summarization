@@ -21,14 +21,13 @@ def train_summarization_model(data_dir,
                               validate_interval_updates="5000",
                               validate_interval="1",
                               freeze_encoder_layers="0",
-                              num_workers="16"):
+                              num_workers="16",
+                              use_adversarial_loss=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
          "--decoder-normalize-before",
-         "--arch", "language_classification_transformer",
          "--layernorm-embedding",
-         "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
          "--sampling-method", "temperature",
          "--sampling-temperature", "1.5",
          "--encoder-langtok", "src",
@@ -36,7 +35,6 @@ def train_summarization_model(data_dir,
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--lang-pairs", lang_pairs,
-         "--criterion", "language_classification_cross_entropy",
          "--optimizer", "adam",
          "--adam-eps", "1e-08",
          "--adam-betas", "(0.9, 0.999)",
@@ -85,6 +83,14 @@ def train_summarization_model(data_dir,
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():
         sys.argv.append("--fp16")
+    if use_adversarial_loss:
+        sys.argv.extend(["--arch", "language_classification_transformer",
+                         "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
+                         "--criterion", "language_classification_cross_entropy"])
+    else:
+        sys.argv.extend(["--arch", "mbart_large_residual_drop",
+                         "--task", "translation_multi_simple_epoch",
+                         "--criterion", "cross_entropy"])
     train.cli_main()
     sys.argv = sys.argv[:1]
 
