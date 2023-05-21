@@ -101,14 +101,16 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]])
         target = target.repeat(max_len, 1)
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
-        target[src_pad_idx] = 0  # padding label
+        padding_label = 0
+        target[src_pad_idx] = padding_label
         lprobs, target = lprobs.view(-1, lprobs.size(-1)), target.view(-1)
 
         loss, nll_loss = label_smoothed_nll_loss(
             lprobs,
             target,
             self.eps,
-            reduce=reduce,
+            ignore_index=padding_label,
+            reduce=reduce
         )
 
         stats_per_lang = {}
