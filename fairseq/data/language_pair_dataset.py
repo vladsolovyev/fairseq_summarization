@@ -394,11 +394,11 @@ class LanguagePairDataset(FairseqDataset):
             bsz = src_tokens.size(0)
             if self.src_lang_id is not None:
                 res["net_input"]["src_lang_id"] = (
-                    torch.LongTensor([[self.src_lang_id]]).expand(bsz, 1).to(src_tokens)
+                    torch.LongTensor([[self.src_lang_id]]).expand(bsz, 1).clone().to(src_tokens)
                 )
             if self.tgt_lang_id is not None:
                 res["tgt_lang_id"] = (
-                    torch.LongTensor([[self.tgt_lang_id]]).expand(bsz, 1).to(src_tokens)
+                    torch.LongTensor([[self.tgt_lang_id]]).expand(bsz, 1).clone().to(src_tokens)
                 )
         return res
 
