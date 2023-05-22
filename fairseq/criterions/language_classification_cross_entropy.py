@@ -96,9 +96,9 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         max_len = encoder_classification_out.shape[0]
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)  # softmax
         if torch.cuda.is_available():
-            target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]]).cuda()
+            target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).cuda()
         else:
-            target = tensor([lang_dict[x.item()] for x in net_input["src_tokens"][:, -1]])
+            target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]])
         target = target.repeat(max_len, 1)
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
         padding_label = 0

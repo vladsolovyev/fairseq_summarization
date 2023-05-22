@@ -86,6 +86,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         parser.add_argument("--use-language-embeddings-encoder-output", action="store_true", help="Use language embeddings for encoder output", default=False)
         parser.add_argument('--freeze-encoder-layers', default=0, help="how many encoder layers should be frozen")
         parser.add_argument('--translate-to-lang', default="", help='translate to language')
+        parser.add_argument("--append_src_tok", action="store_true", help="Append lang_tok to source", default=False)
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)

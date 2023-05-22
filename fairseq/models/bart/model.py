@@ -81,6 +81,7 @@ class BARTModel(TransformerModel):
         return_all_hiddens: bool = True,
         alignment_layer: Optional[int] = None,
         alignment_heads: Optional[int] = None,
+        src_lang_id=None
     ):
         if classification_head_name is not None:
             features_only = True

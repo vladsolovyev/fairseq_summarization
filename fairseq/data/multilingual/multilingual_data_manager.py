@@ -559,10 +559,13 @@ class MultilingualDatasetManager(object):
 
             src_dataset = self.load_data(prefix + src, src_dict, dataset_impl)
             if truncate_source:
+                tokens_to_remove = 2
+                if self.args.append_src_tok:
+                    tokens_to_remove += 1
                 src_dataset = AppendTokenDataset(
                     TruncateDataset(
                         StripTokenDataset(src_dataset, src_dict.eos()),
-                        max_source_positions - 3,
+                        max_source_positions - tokens_to_remove,
                     ),
                     src_dict.eos(),
                 )
@@ -824,14 +827,14 @@ class MultilingualDatasetManager(object):
             truncate_source,
             src_dataset_transform_func=lambda dataset: src_dataset_transform_func(
                 src, tgt, dataset, src_langtok_spec
-            ),
+            ) if self.args.append_src_tok else dataset,
             tgt_dataset_transform_func=lambda dataset: tgt_dataset_transform_func(
                 src, tgt, dataset, tgt_langtok_spec
             ),
-            src_lang_id=_lang_id(lang_dictionary, src)
+            src_lang_id=src_langtok
             if enable_lang_ids and lang_dictionary is not None
             else None,
-            tgt_lang_id=_lang_id(lang_dictionary, tgt)
+            tgt_lang_id=tgt_langtok
             if enable_lang_ids and lang_dictionary is not None
             else None,
             langpairs_sharing_datasets=langpairs_sharing_datasets,
