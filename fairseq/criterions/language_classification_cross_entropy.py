@@ -113,12 +113,12 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             print("Predictions overall: {}".format(torch.mean(predictions, 0)))
         padding_probabilities[:, target] = 1
         padding_probabilities = F.log_softmax(padding_probabilities, -1).repeat(max_len, 1, 1)
+        padding_probabilities = padding_probabilities.view(-1, padding_probabilities.size(-1))
         target = target.repeat(max_len, 1)
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
+        lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(-1)
         lprobs_classifier = lprobs.clone()
         lprobs_classifier[src_pad_idx] = padding_probabilities[src_pad_idx]
-        lprobs_classifier, target, src_pad_idx = \
-            lprobs_classifier.view(-1, lprobs_classifier.size(-1)), target.view(-1), src_pad_idx.contiguous().view(-1)
 
         classifier_loss, classifier_nll_loss = label_smoothed_nll_loss(
             lprobs_classifier,
@@ -127,7 +127,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             reduce=reduce
         )
         lprobs_mse = lprobs.clone()
-        lprobs_mse = lprobs_mse.view(-1, lprobs_mse.size(-1))
         lprobs_mse[src_pad_idx] = target_equal_probabilities[src_pad_idx]
         encoder_loss = torch.nn.MSELoss()(lprobs_mse, target_equal_probabilities)
 
