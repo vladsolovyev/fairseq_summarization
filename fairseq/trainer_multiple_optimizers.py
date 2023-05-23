@@ -841,14 +841,15 @@ class TrainerMultiple(object):
             try:
                 with maybe_no_sync():
                     # forward and backward
-                    loss, classifier_loss, sample_size_i, logging_output = self.task.train_step_with_classifier(
-                        sample=sample,
-                        model=self.model,
-                        criterion=self.criterion,
-                        update_num=self.get_num_updates(),
-                        ignore_grad=is_dummy_batch,
-                        **extra_kwargs,
-                    )
+                    loss, classifier_loss, encoder_loss, sample_size_i, logging_output = \
+                        self.task.train_step_with_classifier(
+                            sample=sample,
+                            model=self.model,
+                            criterion=self.criterion,
+                            update_num=self.get_num_updates(),
+                            ignore_grad=is_dummy_batch,
+                            **extra_kwargs,
+                        )
 
                 logging_outputs.append(logging_output)
                 sample_size += sample_size_i
@@ -922,7 +923,7 @@ class TrainerMultiple(object):
 
         overflow = False
         optimizers = [self._optimizer, self._optimizer_classifier]
-        losses = [loss - classifier_loss, classifier_loss]
+        losses = [loss + encoder_loss, classifier_loss]
         for i in range(len(optimizers)):
             optimizer = optimizers[i]
             loss = losses[i]
@@ -930,6 +931,8 @@ class TrainerMultiple(object):
                 if i == (len(optimizers) - 1):
                     loss.backward()
                 else:
+                    if self.get_num_updates() <= 5000:
+                        continue
                     loss.backward(retain_graph=True)
             try:
                 with torch.autograd.profiler.record_function("reduce-grads"):

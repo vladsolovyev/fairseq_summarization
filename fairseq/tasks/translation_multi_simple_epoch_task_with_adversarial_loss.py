@@ -21,16 +21,14 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         model.train()
         model.set_num_updates(update_num)
         with torch.autograd.profiler.record_function("forward"):
-            loss, classifier_loss, sample_size, logging_output = \
-                criterion(model, sample)
+            loss, classifier_loss, encoder_loss, sample_size, logging_output = criterion(model, sample)
         if ignore_grad:
             loss *= 0
             classifier_loss *= 0
-        return loss, classifier_loss, sample_size, logging_output
+        return loss, classifier_loss, encoder_loss, sample_size, logging_output
 
     def valid_step(self, sample, model, criterion):
         model.eval()
         with torch.no_grad():
-            loss, classifier_loss, sample_size, logging_output = \
-                criterion(model, sample)
-        return -classifier_loss, sample_size, logging_output
+            loss, classifier_loss, encoder_loss, sample_size, logging_output = criterion(model, sample)
+        return encoder_loss, sample_size, logging_output
