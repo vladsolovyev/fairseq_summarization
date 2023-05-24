@@ -1145,7 +1145,7 @@ class MultilingualDatasetManager(object):
                 virtual_size=self.args.virtual_data_size,
                 split=split,
                 # if not using lang_tok altering, simplified to use the same collater
-                shared_collater=self._shared_collater(),
+                shared_collater=False,
             )
         else:
             return self.load_into_concat_dataset(split, datasets, data_param_list)

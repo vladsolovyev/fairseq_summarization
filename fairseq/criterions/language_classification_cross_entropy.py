@@ -99,7 +99,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         max_len, batch_size, _ = encoder_classification_out.shape
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)
         equal_probabilities = tensor(1 / len(lang_dict)).repeat(len(lang_dict))
-        equal_probabilities = F.log_softmax(equal_probabilities)
+        equal_probabilities = F.log_softmax(equal_probabilities, -1)
         target_equal_probabilities = equal_probabilities.repeat(max_len * batch_size, 1).to(device)
         padding_probabilities = tensor([1e-8, 1e-8, 1e-8]).repeat(batch_size, 1).to(device)
         if torch.cuda.is_available():
@@ -108,9 +108,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]])
         if print_predictions:
             print("Target: {}".format(target))
-            predictions = torch.mean(lprobs, 0)
-            print("Predictions: {}".format(predictions))
-            print("Predictions overall: {}".format(torch.mean(predictions, 0)))
+            print("Predictions: {}".format(torch.mean(lprobs, 0)))
         padding_probabilities[:, target] = 1
         padding_probabilities = F.log_softmax(padding_probabilities, -1).repeat(max_len, 1, 1)
         padding_probabilities = padding_probabilities.view(-1, padding_probabilities.size(-1))
