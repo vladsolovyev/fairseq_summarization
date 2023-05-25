@@ -9,7 +9,6 @@ Train a network across multiple GPUs.
 
 import contextlib
 import logging
-import os
 import sys
 import time
 from argparse import Namespace
@@ -17,24 +16,23 @@ from itertools import chain
 from typing import Any, Dict, List
 
 import torch
-from omegaconf import OmegaConf
-
 from fairseq import checkpoint_utils, models, optim, utils
 from fairseq.dataclass.configs import FairseqConfig
 from fairseq.dataclass.utils import convert_namespace_to_omegaconf
 from fairseq.distributed import utils as distributed_utils
 from fairseq.file_io import PathManager
 from fairseq.logging import meters, metrics
-from fairseq.models.ema import build_ema
+from fairseq.nan_detector import NanDetector
 from fairseq.optim import lr_scheduler
-from fairseq.utils import safe_hasattr
+
+from omegaconf import OmegaConf
+
 
 logger = logging.getLogger(__name__)
 
 
 class TrainerMultiple(object):
     """Main class for data parallel training.
-
     This class supports synchronous distributed data parallel training,
     where multiple workers each have a full model replica and gradients
     are accumulated across workers before each update. We use
@@ -64,9 +62,7 @@ class TrainerMultiple(object):
         else:
             self.device = torch.device("cpu")
 
-        if self.is_fsdp:
-            import fairscale
-
+        if self.cfg.distributed_training.ddp_backend == "fully_sharded":
             if self.cfg.common.bf16:
                 raise ValueError(
                     "FullyShardedDataParallel is not compatible with --bf16 or "
@@ -77,39 +73,25 @@ class TrainerMultiple(object):
                     "FullyShardedDataParallel is not compatible with --zero-sharding "
                     "option (it's already built in)"
                 )
-            if (
-                    max(self.cfg.optimization.update_freq) > 1
-                    and fairscale.__version__ < "0.4.0"
-            ):
-                raise RuntimeError(
-                    "Please update to fairscale 0.4.0 or newer when combining "
-                    "--update-freq with FullyShardedDataParallel"
-                )
         else:
-            if (
-                    hasattr(self.cfg.distributed_training, "cpu_offload")
-                    and self.cfg.distributed_training.cpu_offload
-            ):
+            if self.cfg.distributed_training.cpu_offload:
                 raise ValueError("--cpu-offload requires --ddp-backend=fully_sharded")
 
         # copy model and criterion to current device/dtype
         self._criterion = criterion
         self._model = model
-        if not self.is_fsdp:
+        if cfg.distributed_training.ddp_backend != "fully_sharded":
             if cfg.common.fp16:
-                assert not cfg.common.amp, "Cannot use fp16 and AMP together"
                 self._criterion = self._criterion.half()
                 self._model = self._model.half()
             elif cfg.common.bf16:
                 self._criterion = self._criterion.to(dtype=torch.bfloat16)
                 self._model = self._model.to(dtype=torch.bfloat16)
-            elif cfg.common.amp:
-                self._amp_retries = 0
         if (
-                not cfg.distributed_training.pipeline_model_parallel
-                # the DistributedFairseqModel wrapper will handle moving to device,
-                # so only handle cases which don't use the wrapper
-                and not self.use_distributed_wrapper
+            not cfg.distributed_training.pipeline_model_parallel
+            # the DistributedFairseqModel wrapper will handle moving to device,
+            # so only handle cases which don't use the wrapper
+            and not self.use_distributed_wrapper
         ):
             self._criterion = self._criterion.to(device=self.device)
             self._model = self._model.to(device=self.device)
@@ -135,11 +117,10 @@ class TrainerMultiple(object):
         self._num_xla_compiles = 0  # for TPUs
         self._optim_history = None
         self._optimizer = None
-        self._optimizer_classifier = None
+        self._optimizer2 = None
         self._warn_once = set()
         self._wrapped_criterion = None
         self._wrapped_model = None
-        self._ema = None
 
         # TODO(myleott): support tpu
         if self.cuda and self.data_parallel_world_size > 1:
@@ -176,7 +157,7 @@ class TrainerMultiple(object):
         """Reinitialize the Trainer, typically after model params change."""
         self._lr_scheduler = None
         self._optimizer = None
-        self._optimizer_classifier = None
+        self._optimizer2 = None
         self._wrapped_criterion = None
         self._wrapped_model = None
 
@@ -205,41 +186,36 @@ class TrainerMultiple(object):
     @property
     def use_distributed_wrapper(self) -> bool:
         return (
-                       self.data_parallel_world_size > 1 and not self.cfg.optimization.use_bmuf
-               ) or (self.is_fsdp and self.cfg.distributed_training.cpu_offload)
+            self.data_parallel_world_size > 1
+            and not self.cfg.optimization.use_bmuf
+        ) or (
+            self.cfg.distributed_training.ddp_backend == "fully_sharded"
+            and self.cfg.distributed_training.cpu_offload
+        )
 
     @property
     def should_save_checkpoint_on_current_rank(self) -> bool:
         """Indicates whether to save checkpoints on the current DDP rank."""
-        if (
-                self.is_fsdp and self.cfg.distributed_training.use_sharded_state
-        ) or getattr(self.cfg.model, "base_layers", 0) > 0:
+        if self.cfg.distributed_training.ddp_backend == "fully_sharded" or getattr(self.cfg.model, "base_layers", 0) > 0:
             return True
         else:
             return self.is_data_parallel_master
 
     @property
-    def always_call_state_dict_during_save_checkpoint(self) -> bool:
-        if self.is_fsdp and not self.cfg.distributed_training.use_sharded_state:
-            # FSDP calls communication collective when consolidating checkpoints
-            return True
-        else:
-            return False
-
-    @property
     def checkpoint_suffix(self) -> str:
         """Suffix to add to the checkpoint file name."""
-        if self.is_fsdp and self.cfg.distributed_training.use_sharded_state:
-            return self.cfg.checkpoint.checkpoint_suffix + "-shard{0}".format(
-                self.data_parallel_rank
-            )
+        if self.cfg.distributed_training.ddp_backend == "fully_sharded":
+            return self.cfg.checkpoint.checkpoint_suffix + "-shard{0}".format(self.data_parallel_rank)
         else:
             return self.cfg.checkpoint.checkpoint_suffix or ""
 
     @property
     def criterion(self):
         if self._wrapped_criterion is None:
-            if utils.has_parameters(self._criterion) and self.use_distributed_wrapper:
+            if (
+                utils.has_parameters(self._criterion)
+                and self.use_distributed_wrapper
+            ):
                 self._wrapped_criterion = models.DistributedFairseqModel(
                     self.cfg.distributed_training,
                     self._criterion,
@@ -265,21 +241,15 @@ class TrainerMultiple(object):
         return self._wrapped_model
 
     @property
-    def ema(self):
-        if self._ema is None:
-            self._build_ema()
-        return self._ema
-
-    def _build_ema(self):
-        if self.cfg.ema.store_ema:
-            self._ema = build_ema(self._model, self.cfg.ema, self.device)
-            logger.info("Exponential Moving Average Shadow Model is initialized.")
-
-    @property
     def optimizer(self):
-        if self._optimizer is None:
+        if self._optimizer is None or self._optimizer2 is None:
+            print("||||||||||||||| BUILDING OPTIM")
             self._build_optimizer()
-        return self._optimizer
+
+        if self._num_updates % 2 == 0:
+            return self._optimizer
+        else:
+            return self._optimizer2
 
     @property
     def lr_scheduler(self):
@@ -288,28 +258,37 @@ class TrainerMultiple(object):
         return self._lr_scheduler
 
     def _build_optimizer(self):
+        params_orig = list(
+            filter(
+                lambda p: p.requires_grad,
+                chain(self.model.parameters(), self.criterion.parameters()),
+            )
+        )
+
+        params = [
+            i[1] for i in
+            list(
+            filter(
+                lambda p: p[1].requires_grad and "encoder.language_classifier" not in p[0],
+                chain(self.model.named_parameters(), self.criterion.named_parameters()),
+            )
+        )]
+
+        params_classify = [
+            i[1] for i in
+            list(
+            filter(
+                lambda p: p[1].requires_grad and "encoder.language_classifier" in p[0],
+                chain(self.model.named_parameters(), self.criterion.named_parameters()),
+            )
+        )]
+
+        print("=========", len(params_orig), len(params), len(params_classify))
+
         if (
-                self.cfg.optimization.debug_param_names
-                and self.cfg.common.fp16_no_flatten_grads
+            self.cfg.distributed_training.ddp_backend == "fully_sharded"
+            and self.cfg.common.fp16
         ):
-            params = []
-            self.param_names = []
-
-            for n, p in chain(
-                    self.model.named_parameters(), self.criterion.named_parameters()
-            ):
-                if p.requires_grad:
-                    params.append(p)
-                    self.param_names.append(n)
-        else:
-            params = [parameter[1] for parameter
-                      in chain(self.model.named_parameters(), self.criterion.named_parameters())
-                      if parameter[1].requires_grad and "encoder.language_classifier" not in parameter[0]]
-            params_classifier = [parameter[1] for parameter
-                                 in chain(self.model.named_parameters(), self.criterion.named_parameters())
-                                 if parameter[1].requires_grad and "encoder.language_classifier" in parameter[0]]
-
-        if self.is_fsdp and self.cfg.common.fp16:
             # FullyShardedDataParallel always uses MemoryEfficientFP16 wrapper,
             # mostly for the grad scaling. But if we don't have the
             # --memory-efficient-fp16 flag set, then we're effectively doing
@@ -319,36 +298,32 @@ class TrainerMultiple(object):
             self._optimizer = optim.MemoryEfficientFP16Optimizer.build_optimizer(
                 self.cfg, params, allow_unsupported=allow_unsupported
             )
-        elif self.cfg.common.fp16 or self.cfg.common.bf16 or self.cfg.common.amp:
+        elif self.cfg.common.fp16 or self.cfg.common.bf16:
             if self.cuda and torch.cuda.get_device_capability(0)[0] < 7:
                 logger.info(
-                    "NOTE: your device does NOT support faster training with --fp16 or --amp, "
+                    "NOTE: your device does NOT support faster training with --fp16, "
                     "please switch to FP32 which is likely to be faster"
                 )
             if (
-                    self.cfg.common.memory_efficient_fp16
-                    or self.cfg.common.memory_efficient_bf16
+                self.cfg.common.memory_efficient_fp16
+                or self.cfg.common.memory_efficient_bf16
             ):
                 self._optimizer = optim.MemoryEfficientFP16Optimizer.build_optimizer(
                     self.cfg, params
                 )
-            elif self.cfg.common.amp:
-                self._optimizer = optim.AMPOptimizer.build_optimizer(self.cfg, params)
             else:
+                # WE ARE HERE
                 self._optimizer = optim.FP16Optimizer.build_optimizer(self.cfg, params)
-                self._optimizer_classifier = optim.FP16Optimizer.build_optimizer(self.cfg, params_classifier)
+                self._optimizer2 = optim.FP16Optimizer.build_optimizer(self.cfg, params_classify)
         else:
             if self.cuda and torch.cuda.get_device_capability(0)[0] >= 7:
-                logger.info(
-                    "NOTE: your device may support faster training with --fp16 or --amp"
-                )
+                logger.info("NOTE: your device may support faster training with --fp16")
             self._optimizer = optim.build_optimizer(self.cfg.optimizer, params)
-            self._optimizer_classifier = optim.build_optimizer(self.cfg.optimizer, params_classifier)
+            self._optimizer2 = optim.build_optimizer(self.cfg.optimizer, params_classify)
 
-        if self.is_fsdp:
-            assert (
-                not self.cfg.optimization.use_bmuf
-            ), "--ddp-backend=fully_sharded is not compatible with BMUF"
+        if self.cfg.distributed_training.ddp_backend == "fully_sharded":
+            assert not self.cfg.optimization.use_bmuf, \
+                "--ddp-backend=fully_sharded is not compatible with BMUF"
             assert self._optimizer.supports_flat_params, (
                 "--ddp-backend=fully_sharded is only compatible with pointwise "
                 "optimizers (e.g., Adam, AdamW, Adadelta, Adamax, SGD, etc.). "
@@ -364,9 +339,9 @@ class TrainerMultiple(object):
 
         if self.cfg.distributed_training.zero_sharding == "os":
             if (
-                    self.cfg.common.fp16
-                    and not self.cfg.common.memory_efficient_fp16
-                    and not self.cfg.common.memory_efficient_bf16
+                self.cfg.common.fp16
+                and not self.cfg.common.memory_efficient_fp16
+                and not self.cfg.common.memory_efficient_bf16
             ) and not self.cfg.common.fp16_no_flatten_grads:
                 raise ValueError(
                     "ZeRO is incomptabile with fp16 and flattened grads. "
@@ -383,93 +358,73 @@ class TrainerMultiple(object):
         )
         self._lr_scheduler.step_update(0)
 
-    @property
-    def is_fsdp(self):
-        return self.cfg.distributed_training.ddp_backend == "fully_sharded"
-
     def consolidate_optimizer(self):
         """For OSS, we need to consolidate the state dict."""
-        if self.cfg.checkpoint.no_save_optimizer_state:
-            return
         self._gathered_optim_state = None
         if hasattr(self.optimizer.optimizer, "consolidate_state_dict"):
             self.optimizer.optimizer.consolidate_state_dict()
-        elif self.is_fsdp and not self.model.use_sharded_state:
-            st = self.model.gather_full_optim_state_dict(
-                self.optimizer
-            )  # only returns on rank 0
-            self._gathered_optim_state = st
+
+        elif self.cfg.distributed_training.ddp_backend == 'fully_sharded':
+            self._gathered_optim_state = self.model.gather_full_optim_state_dict(self.optimizer,
+                                                                                 recipient_rank=0)
+
 
     def state_dict(self):
         state_dict = {
             "args": None,  # legacy
             "cfg": (
-                OmegaConf.to_container(self.cfg, resolve=True, enum_to_str=True)
-                if OmegaConf.is_config(self.cfg)
-                else self.cfg
+                OmegaConf.to_container(self.cfg)
+                if OmegaConf.is_config(self.cfg) else self.cfg
             ),
             "model": self.model.state_dict(),
             "criterion": (
                 self.criterion.state_dict()
-                if utils.has_parameters(self.criterion)
-                else None
+                if utils.has_parameters(self.criterion) else None
             ),
             "optimizer_history": (self._optim_history or [])
-                                 + [
-                                     {
-                                         "criterion_name": self.get_criterion().__class__.__name__,
-                                         "optimizer_name": self.optimizer.__class__.__name__,
-                                         "lr_scheduler_state": self.lr_scheduler.state_dict(),
-                                         "num_updates": self.get_num_updates(),
-                                     }
-                                 ],
+            + [
+                {
+                    "criterion_name": self.get_criterion().__class__.__name__,
+                    "optimizer_name": self.optimizer.__class__.__name__,
+                    "lr_scheduler_state": self.lr_scheduler.state_dict(),
+                    "num_updates": self.get_num_updates(),
+                }
+            ],
             "task_state": self.task.state_dict() if self.task is not None else {},
             "extra_state": {
                 "metrics": metrics.state_dict(),
                 "previous_training_time": self.cumulative_training_time(),
-            },
+            }
         }
-        if self.cfg.ema.store_ema:
-            # Save EMA model state as extra state
-            state_dict["extra_state"]["ema"] = self.ema.get_model().state_dict()
-            if self.cfg.ema.ema_fp32:
-                # Save EMA params in fp32
-                state_dict["extra_state"]["ema_fp32_params"] = self.ema.fp32_params
         if not self.cfg.checkpoint.no_save_optimizer_state:
             if self._gathered_optim_state is not None:
                 state_dict["last_optimizer_state"] = self._gathered_optim_state
                 self._gathered_optim_state = None
             else:
                 state_dict["last_optimizer_state"] = self.optimizer.state_dict()
-        if self.is_fsdp:
-            # save meta data for recombining checkpoint upon loading
-            state_dict["fsdp_metadata"] = self.model.local_metadata_dict()
         return state_dict
 
     def save_checkpoint(self, filename, extra_state):
         """Save all training state in a checkpoint file."""
+        logger.info(f"Saving checkpoint to {filename}")
+        # call state_dict on all ranks in case it needs internal communication
+        state_dict = utils.move_to_cpu(self.state_dict())
+        state_dict["extra_state"].update(extra_state)
         if self.should_save_checkpoint_on_current_rank:
-            logger.info(f"Saving checkpoint to {os.path.abspath(filename)}")
-            # call state_dict on all ranks in case it needs internal communication
-            state_dict = utils.move_to_cpu(self.state_dict())
-            state_dict["extra_state"].update(extra_state)
-
             checkpoint_utils.torch_persistent_save(
                 state_dict,
                 filename,
                 async_write=self.cfg.checkpoint.write_checkpoints_asynchronously,
             )
-            logger.info(f"Finished saving checkpoint to {os.path.abspath(filename)}")
-            return os.path.abspath(filename)
-        return None
+        logger.info(f"Finished saving checkpoint to {filename}")
 
     def load_checkpoint(
-            self,
-            filename,
-            reset_optimizer=False,
-            reset_lr_scheduler=False,
-            optimizer_overrides=None,
-            reset_meters=False,
+        self,
+        filename,
+        reset_optimizer=False,
+        reset_lr_scheduler=False,
+        optimizer_overrides=None,
+        reset_meters=False,
     ):
         """
         Load all training state from a checkpoint file.
@@ -483,13 +438,13 @@ class TrainerMultiple(object):
         bexists = PathManager.isfile(filename)
         if bexists:
             load_on_all_ranks = (
-                    self.cfg.checkpoint.load_checkpoint_on_all_dp_ranks
-                    # TPUs don't support broadcast yet, so load checkpoints
-                    # on every worker for now
-                    or self.tpu
-                    # FSDP requires loading checkpoint shards on all ranks
-                    or (self.is_fsdp and self.cfg.distributed_training.use_sharded_state)
-                    or getattr(self.cfg.model, "base_layers", 0) > 0
+                self.cfg.checkpoint.load_checkpoint_on_all_dp_ranks
+                # TPUs don't support broadcast yet, so load checkpoints
+                # on every worker for now
+                or self.tpu
+                # FSDP requires loading checkpoint shards on all ranks
+                or self.cfg.distributed_training.ddp_backend == "fully_sharded"
+                or getattr(self.cfg.model, "base_layers", 0) > 0
             )
 
             if load_on_all_ranks or self.data_parallel_rank == 0:
@@ -502,10 +457,10 @@ class TrainerMultiple(object):
                 # state. Later we will broadcast sharded states to each rank
                 # to avoid memory from exploding.
                 if (
-                        not load_on_all_ranks
-                        and self.cfg.distributed_training.zero_sharding == "os"
-                        and "last_optimizer_state" in state
-                        and is_distributed
+                    not load_on_all_ranks
+                    and self.cfg.distributed_training.zero_sharding == "os"
+                    and "last_optimizer_state" in state
+                    and is_distributed
                 ):
                     state["last_optimizer_state"] = "SHARDED"
             else:
@@ -524,67 +479,8 @@ class TrainerMultiple(object):
 
             # load model parameters
             try:
-                if (
-                        "optimizer_history" in state
-                        and len(state["optimizer_history"]) > 0
-                        and "num_updates" in state["optimizer_history"][-1]
-                ):
-                    self.model.set_num_updates(
-                        state["optimizer_history"][-1]["num_updates"]
-                    )
-
-                # this is the code related to AdaPrune
-                # In short, it removes redundant heads in multi-head attention module based on heads importance provided
-                # For more info, please refer to the paper: https://openreview.net/forum?id=_CMSV7FTzGI
-                # The idea of prune in mha can be summarized as
-                # Fine tune model (e.g. roberta encoder) on a certain datasets with regularization
-                # After the model is trained. User could use get_reserve_head_index and _adaptive_prune_heads functions to get the top X heads with most importance.
-                # Then user uses the rank to prune a new roberta encoder and save the pruned ckpt manually.
-                # User will fine tune the the new roberta encoder via the ckpt saved above
-                # To get rid of registering different pruned version of Roberta, I use the argument --mha-heads-to-keep to prune the Roberta model into a pruned version which matches the pruned ckpt.
-                if (
-                        safe_hasattr(self.model, "args")
-                        and safe_hasattr(self.model.args, "mha_heads_to_keep")
-                        and self.model.args.mha_heads_to_keep != -1
-                ):
-                    logger.info(
-                        f"Prune model: keep {self.model.args.mha_heads_to_keep} heads for each multihead attention module"
-                    )
-                    for layer in self.model.encoder.sentence_encoder.layers:
-                        reserve_head_index = layer.self_attn._get_reserve_head_index(
-                            num_heads_to_keep=self.model.args.mha_heads_to_keep
-                        )
-                        layer.self_attn._adaptive_prune_heads(
-                            reserve_head_index=reserve_head_index
-                        )
-                        layer.self_attn._set_skip_embed_dim_check()
-                    logger.info(self.model)
-                # this is the code related to AdaPrune
-                # In short, it removes redundant units in feedforward layer in each transformer layer based on importance
-                # For more info, please refer to the paper: https://openreview.net/forum?id=_CMSV7FTzGI
-                # The idea of prune in ffn can be summarized as
-                # Fine tune model (e.g. roberta encoder) on a certain datasets with regularization
-                # After the model is trained. User could use _get_fc_rank and _prune_fc_layer functions to get the top X units with most importance.
-                # Then user uses the rank to prune a new roberta encoder and save the pruned ckpt manually.
-                # User will fine tune the the new roberta encoder via the ckpt saved above
-                # To get rid of registering different pruned version of Roberta, I use the argument --ffn-blocks-to-remove to prune the Roberta model into a pruned version which matches the pruned ckpt.
-                if (
-                        safe_hasattr(self.model, "args")
-                        and safe_hasattr(self.model.args, "ffn_blocks_to_remove")
-                        and self.model.args.ffn_blocks_to_remove != -1
-                ):
-                    logger.info(
-                        f"Prune model: remove {self.model.args.ffn_blocks_to_remove} ffn blocks for each transformer layer"
-                    )
-                    for layer in self.model.encoder.sentence_encoder.layers:
-                        remove_index = layer._get_fc_rank(
-                            remove_num=self.model.args.ffn_blocks_to_remove
-                        )
-                        layer._prune_fc_layer(remove_index=remove_index)
-                    logger.info(self.model)
-
                 self.model.load_state_dict(
-                    state["model"], strict=False, model_cfg=self.cfg.model
+                    state["model"], strict=True, model_cfg=self.cfg.model
                 )
                 # save memory for later steps
                 del state["model"]
@@ -609,24 +505,21 @@ class TrainerMultiple(object):
             # only reload optimizer and lr_scheduler if they match
             last_optim = self._optim_history[-1]
             assert (
-                    last_optim["criterion_name"] == self.get_criterion().__class__.__name__
+                last_optim["criterion_name"] == self.get_criterion().__class__.__name__
             ), f"Criterion does not match; please reset the optimizer (--reset-optimizer). {last_optim['criterion_name']} vs {self.get_criterion().__class__.__name__}"
             assert (
-                    last_optim["optimizer_name"] == self.optimizer.__class__.__name__
+                last_optim["optimizer_name"] == self.optimizer.__class__.__name__
             ), f"Optimizer does not match; please reset the optimizer (--reset-optimizer). {last_optim['optimizer_name']} vs {self.optimizer.__class__.__name__}"
 
             if not reset_lr_scheduler:
                 self.lr_scheduler.load_state_dict(last_optim["lr_scheduler_state"])
 
-            if self.is_fsdp and not self.model.use_sharded_state:
-                # if use_sharded_state, the last_optim_state is already sharded, skip this
-                last_optim_state = self.model.get_shard_from_optim_state_dict(
-                    last_optim_state
-                )
-            elif not load_on_all_ranks and is_distributed:
+            if not load_on_all_ranks and is_distributed:
                 last_optim_state = self.optimizer.broadcast_global_state_dict(
                     last_optim_state
                 )
+            elif self.cfg.distributed_training.ddp_backend == 'fully_sharded':
+                last_optim_state = self.model.get_shard_from_optim_state_dict(last_optim_state)
 
             self.optimizer.load_state_dict(last_optim_state, optimizer_overrides)
 
@@ -642,10 +535,7 @@ class TrainerMultiple(object):
 
             self.lr_step(epoch)
 
-            if (
-                    itr_state.get("version", 1) >= 2
-                    and itr_state["iterations_in_epoch"] == 0
-            ):
+            if itr_state.get("version", 1) >= 2 and itr_state["iterations_in_epoch"] == 0:
                 # reset meters at start of epoch
                 reset_meters = True
 
@@ -656,29 +546,6 @@ class TrainerMultiple(object):
                 for meter in metrics.get_meters("default"):
                     if isinstance(meter, meters.TimeMeter):
                         meter.reset()
-
-            if self.cfg.ema.store_ema:
-                if "ema" not in extra_state:
-                    logger.warn(
-                        "EMA not found in checkpoint. But store_ema is True. "
-                        "EMA is re-initialized from checkpoint."
-                    )
-                    self.ema.restore(
-                        state["model"], build_fp32_params=self.cfg.ema.ema_fp32
-                    )
-                else:
-                    logger.info("Loading EMA from checkpoint")
-                    self.ema.restore(extra_state["ema"], build_fp32_params=False)
-
-                    if self.cfg.ema.ema_fp32:
-                        if "ema_fp32_params" in extra_state:
-                            logger.info("Loading EMA fp32 params from checkpoint")
-                            self.ema.build_fp32_params(extra_state["ema_fp32_params"])
-                        else:
-                            logger.info(
-                                "Building EMA fp32 params from EMA model in checkpoint"
-                            )
-                            self.ema.build_fp32_params()
 
             logger.info(
                 "Loaded checkpoint {} (epoch {} @ {} updates)".format(
@@ -692,13 +559,13 @@ class TrainerMultiple(object):
         return extra_state
 
     def get_train_iterator(
-            self,
-            epoch,
-            combine=True,
-            load_dataset=True,
-            data_selector=None,
-            shard_batch_itr=True,
-            disable_iterator_cache=False,
+        self,
+        epoch,
+        combine=True,
+        load_dataset=True,
+        data_selector=None,
+        shard_batch_itr=True,
+        disable_iterator_cache=False,
     ):
         """Return an EpochBatchIterator over the training set for a given epoch."""
         if load_dataset:
@@ -721,26 +588,21 @@ class TrainerMultiple(object):
             ),
             ignore_invalid_inputs=True,
             required_batch_size_multiple=self.cfg.dataset.required_batch_size_multiple,
-            seed=(self.cfg.common.seed + epoch)
-            if self.cfg.dataset.update_ordered_indices_seed
-            else self.cfg.common.seed,
+            seed=self.cfg.common.seed,
             num_shards=self.data_parallel_world_size if shard_batch_itr else 1,
             shard_id=self.data_parallel_rank if shard_batch_itr else 0,
             num_workers=self.cfg.dataset.num_workers,
             epoch=epoch,
             data_buffer_size=self.cfg.dataset.data_buffer_size,
             disable_iterator_cache=disable_iterator_cache,
-            skip_remainder_batch=self.cfg.optimization.skip_remainder_batch,
-            grouped_shuffling=self.cfg.dataset.grouped_shuffling,
-            update_epoch_batch_itr=self.cfg.dataset.update_epoch_batch_itr,
         )
         self.reset_dummy_batch(batch_iterator.first_batch)
         return batch_iterator
 
     def get_valid_iterator(
-            self,
-            subset,
-            disable_iterator_cache=False,
+        self,
+        subset,
+        disable_iterator_cache=False,
     ):
         """Return an EpochBatchIterator over given validation subset for a given epoch."""
         batch_iterator = self.task.get_batch_iterator(
@@ -762,7 +624,6 @@ class TrainerMultiple(object):
             epoch=1,
             data_buffer_size=self.cfg.dataset.data_buffer_size,
             disable_iterator_cache=disable_iterator_cache,
-            skip_remainder_batch=False,
         )
         self.reset_dummy_batch(batch_iterator.first_batch)
         return batch_iterator
@@ -804,15 +665,6 @@ class TrainerMultiple(object):
 
         metrics.log_start_time("train_wall", priority=800, round=0)
 
-        # If EMA is enabled through store_ema=True
-        # and task.uses_ema is True, pass the EMA model as a keyword
-        # argument to the task.
-        extra_kwargs = {}
-        if self.cfg.ema.store_ema and getattr(self.task, "uses_ema", False):
-            extra_kwargs["ema_model"] = self.ema.get_model()
-
-        has_oom = False
-
         # forward and backward pass
         logging_outputs, sample_size, ooms = [], 0, 0
         for i, sample in enumerate(samples):  # delayed update loop
@@ -825,14 +677,9 @@ class TrainerMultiple(object):
                 all-reduce in the last backwards pass.
                 """
                 if (
-                        self.data_parallel_world_size > 1
-                        and hasattr(self.model, "no_sync")
-                        and i < len(samples) - 1
-                        # The no_sync context manager results in increased memory
-                        # usage with FSDP, since full-size gradients will be
-                        # accumulated on each GPU. It's typically a better tradeoff
-                        # to do the extra communication with FSDP.
-                        and not self.is_fsdp
+                    self.data_parallel_world_size > 1
+                    and hasattr(self.model, "no_sync")
+                    and i < len(samples) - 1
                 ):
                     return self.model.no_sync()
                 else:
@@ -841,15 +688,15 @@ class TrainerMultiple(object):
             try:
                 with maybe_no_sync():
                     # forward and backward
-                    loss, classifier_loss, encoder_loss, sample_size_i, logging_output = \
-                        self.task.train_step_with_classifier(
-                            sample=sample,
-                            model=self.model,
-                            criterion=self.criterion,
-                            update_num=self.get_num_updates(),
-                            ignore_grad=is_dummy_batch,
-                            **extra_kwargs,
-                        )
+                    loss, sample_size_i, logging_output = self.task.train_step(
+                        sample=sample,
+                        model=self.model,
+                        criterion=self.criterion,
+                        optimizer=self.optimizer,
+                        update_num=self.get_num_updates(),
+                        ignore_grad=is_dummy_batch,
+                    )
+                    del loss
 
                 logging_outputs.append(logging_output)
                 sample_size += sample_size_i
@@ -861,29 +708,19 @@ class TrainerMultiple(object):
             except RuntimeError as e:
                 if "out of memory" in str(e):
                     self._log_oom(e)
-                    has_oom = True
                     if raise_oom:
                         raise e
+                    logger.warning(
+                        "attempting to recover from OOM in forward/backward pass"
+                    )
+                    ooms += 1
+                    self.zero_grad()
+                    if self.cuda:
+                        torch.cuda.empty_cache()
+                    if self.cfg.distributed_training.distributed_world_size == 1:
+                        return None
                 else:
                     raise e
-            except Exception:
-                self.consolidate_optimizer()
-                self.save_checkpoint(
-                    os.path.join(self.cfg.checkpoint.save_dir, "crash.pt"), {}
-                )
-                raise
-
-            if has_oom:
-                logger.warning(
-                    "attempting to recover from OOM in forward/backward pass"
-                )
-                ooms += 1
-                self.zero_grad()
-                if self.cuda:
-                    torch.cuda.empty_cache()
-
-                if self.cfg.distributed_training.distributed_world_size == 1:
-                    return None
 
             if self.tpu and i < len(samples) - 1:
                 # tpu-comment: every XLA operation before marking step is
@@ -907,147 +744,108 @@ class TrainerMultiple(object):
         # gather logging outputs from all replicas
         if self._sync_stats():
             train_time = self._local_cumulative_training_time()
-            (
-                logging_outputs,
-                (
-                    sample_size,
-                    ooms,
-                    total_train_time,
-                ),
+            logging_outputs, (
+                sample_size,
+                ooms,
+                total_train_time,
             ) = self._aggregate_logging_outputs(
                 logging_outputs, sample_size, ooms, train_time, ignore=is_dummy_batch
             )
             self._cumulative_training_time = (
-                    total_train_time / self.data_parallel_world_size
+                total_train_time / self.data_parallel_world_size
             )
 
         overflow = False
-        optimizers = [self._optimizer, self._optimizer_classifier]
-        losses = [loss + encoder_loss, classifier_loss]
-        for i in range(len(optimizers)):
-            optimizer = optimizers[i]
-            loss = losses[i]
-            with torch.autograd.profiler.record_function("backward"):
-                if i == (len(optimizers) - 1):
-                    loss.backward()
-                else:
-                    if self.get_num_updates() <= 5000:
-                        continue
-                    loss.backward(retain_graph=True)
-            try:
-                with torch.autograd.profiler.record_function("reduce-grads"):
-                    # reduce gradients across workers
-                    optimizer.all_reduce_grads(self.model)
-                    if utils.has_parameters(self.criterion):
-                        optimizer.all_reduce_grads(self.criterion)
+        try:
+            with torch.autograd.profiler.record_function("reduce-grads"):
+                # reduce gradients across workers
+                self.optimizer.all_reduce_grads(self.model)
+                if utils.has_parameters(self.criterion):
+                    self.optimizer.all_reduce_grads(self.criterion)
 
-                with torch.autograd.profiler.record_function("multiply-grads"):
-                    # multiply gradients by (data_parallel_size / sample_size) since
-                    # DDP normalizes by the number of data parallel workers for
-                    # improved fp16 precision.
-                    # Thus we get (sum_of_gradients / sample_size) at the end.
-                    # In case of fp16, this step also undoes loss scaling.
-                    # (Debugging note: Some optimizers perform this scaling on the
-                    # fly, so inspecting model.parameters() or optimizer.params may
-                    # still show the original, unscaled gradients.)
-                    numer = (
-                        self.data_parallel_world_size
-                        if not self.cfg.optimization.use_bmuf or self._sync_stats()
-                        else 1
-                    )
-                    optimizer.multiply_grads(numer / (sample_size or 1.0))
-                    # Note: (sample_size or 1.0) handles the case of a zero gradient, in a
-                    # way that avoids CPU/device transfers in case sample_size is a GPU or
-                    # TPU object. The assumption is that the gradient itself is also 0.
-
-                with torch.autograd.profiler.record_function("clip-grads"):
-                    # clip grads
-                    grad_norm = self.clip_grad_norm(self.cfg.optimization.clip_norm)
-
-                # check that grad norms are consistent across workers
-                # on tpu check tensor is slow
-                if not self.tpu:
-                    if (
-                            not self.cfg.optimization.use_bmuf
-                            and self.cfg.distributed_training.ddp_backend != "slowmo"
-                    ):
-                        self._check_grad_norms(grad_norm)
-                    if not torch.isfinite(grad_norm).all():
-                        # in case of AMP, if gradients are Nan/Inf then
-                        # optimizer step is still required
-                        if self.cfg.common.amp:
-                            overflow = True
-                        else:
-                            # check local gradnorm single GPU case, trigger NanDetector
-                            raise FloatingPointError("gradients are Nan/Inf")
-
-                with torch.autograd.profiler.record_function("optimizer"):
-                    # take an optimization step
-                    self.task.optimizer_step(
-                        optimizer, model=self.model, update_num=self.get_num_updates()
-                    )
-                    if self.cfg.common.amp and overflow:
-                        if self._amp_retries == self.cfg.common.amp_batch_retries:
-                            logger.info("AMP: skipping this batch.")
-                            self._amp_retries = 0
-                        else:
-                            self._amp_retries += 1
-                            return self.train_step(
-                                samples, raise_oom
-                            )  # recursion to feed in same batch
-
-            except FloatingPointError:
-                self.consolidate_optimizer()
-                self.save_checkpoint(
-                    os.path.join(self.cfg.checkpoint.save_dir, "crash.pt"), {}
+            with torch.autograd.profiler.record_function("multiply-grads"):
+                # multiply gradients by (data_parallel_size / sample_size) since
+                # DDP normalizes by the number of data parallel workers for
+                # improved fp16 precision.
+                # Thus we get (sum_of_gradients / sample_size) at the end.
+                # In case of fp16, this step also undoes loss scaling.
+                # (Debugging note: Some optimizers perform this scaling on the
+                # fly, so inspecting model.parameters() or optimizer.params may
+                # still show the original, unscaled gradients.)
+                numer = (
+                    self.data_parallel_world_size
+                    if not self.cfg.optimization.use_bmuf or self._sync_stats()
+                    else 1
                 )
-                raise
-            except OverflowError as e:
-                overflow = True
-                logger.info(
-                    f"NOTE: gradient overflow detected, ignoring gradient, {str(e)}"
-                )
+                self.optimizer.multiply_grads(numer / (sample_size or 1.0))
+                # Note: (sample_size or 1.0) handles the case of a zero gradient, in a
+                # way that avoids CPU/device transfers in case sample_size is a GPU or
+                # TPU object. The assumption is that the gradient itself is also 0.
 
-                if hasattr(self, "param_names") and hasattr(
-                        self.optimizer, "fp32_optimizer"
+            with torch.autograd.profiler.record_function("clip-grads"):
+                # clip grads
+                grad_norm = self.clip_grad_norm(self.cfg.optimization.clip_norm)
+
+            # check that grad norms are consistent across workers
+            # on tpu check tensor is slow
+            if not self.tpu:
+                if (
+                    not self.cfg.optimization.use_bmuf
+                    and self.cfg.distributed_training.ddp_backend != "slow_mo"
                 ):
-                    for p, n in zip(optimizer.fp32_optimizer.params, self.param_names):
-                        if torch.isinf(p.grad).any() or torch.isnan(p.grad).any():
-                            logger.info(f"overflow in param {n}")
+                    self._check_grad_norms(grad_norm)
+                if not torch.isfinite(grad_norm).all():
+                    # check local gradnorm single GPU case, trigger NanDetector
+                    raise FloatingPointError("gradients are Nan/Inf")
 
-                grad_norm = torch.tensor(0.0).cuda()
-                self.zero_grad()
-            except RuntimeError as e:
-                if "out of memory" in str(e):
-                    self._log_oom(e)
-                    logger.error("OOM during optimization, irrecoverable")
-                raise e
-
-            # Some distributed wrappers (e.g., SlowMo) need access to the optimizer
-            # after the step
-            if hasattr(self.model, "perform_slowmo"):
-                self.model.perform_slowmo(
-                    optimizer.optimizer, getattr(optimizer, "fp32_params", None)
+            with torch.autograd.profiler.record_function("optimizer"):
+                # take an optimization step
+                self.task.optimizer_step(
+                    self.optimizer, model=self.model, update_num=self.get_num_updates()
                 )
+
+        except FloatingPointError:
+            # re-run the forward and backward pass with hooks attached to print
+            # out where it fails
             self.zero_grad()
+            with NanDetector(self.get_model()):
+                for _, sample in enumerate(samples):
+                    sample, _ = self._prepare_sample(sample)
+                    self.task.train_step(
+                        sample,
+                        self.model,
+                        self.criterion,
+                        self.optimizer,
+                        self.get_num_updates(),
+                        ignore_grad=False,
+                    )
+            raise
+        except OverflowError as e:
+            overflow = True
+            logger.info(f"NOTE: gradient overflow detected, ignoring gradient, {str(e)}")
+            grad_norm = torch.tensor(0.0).cuda()
+            self.zero_grad()
+        except RuntimeError as e:
+            if "out of memory" in str(e):
+                self._log_oom(e)
+                logger.error("OOM during optimization, irrecoverable")
+            raise e
+
+        # Some distributed wrappers (e.g., SlowMo) need access to the optimizer
+        # after the step
+        if hasattr(self.model, "perform_additional_optimizer_actions"):
+            if hasattr(self.optimizer, "fp32_params"):
+                self.model.perform_additional_optimizer_actions(
+                    self.optimizer.optimizer, self.optimizer.fp32_params
+                )
+            else:
+                self.model.perform_additional_optimizer_actions(
+                    self.optimizer.optimizer
+                )
 
         logging_output = None
-        if not overflow or self.cfg.distributed_training.ddp_backend == "slowmo":
+        if not overflow or self.cfg.distributed_training.ddp_backend == "slow_mo":
             self.set_num_updates(self.get_num_updates() + 1)
-
-            if self.cfg.ema.store_ema:
-                # Step EMA forward with new model.
-                self.ema.step(
-                    self.get_model(),
-                    self.get_num_updates(),
-                )
-                metrics.log_scalar(
-                    "ema_decay",
-                    self.ema.get_decay(),
-                    priority=10000,
-                    round=5,
-                    weight=0,
-                )
 
             if self.tpu:
                 import torch_xla.core.xla_model as xm
@@ -1069,9 +867,7 @@ class TrainerMultiple(object):
                     metrics.log_scalar(
                         "gb_total", gb_total, priority=1600, round=1, weight=0
                     )
-                    logging_outputs = self._xla_markstep_and_send_to_cpu(
-                        logging_outputs
-                    )
+                    logging_outputs = self._xla_markstep_and_send_to_cpu(logging_outputs)
                     logging_output = self._reduce_and_log_stats(
                         logging_outputs, sample_size, grad_norm
                     )
@@ -1097,39 +893,32 @@ class TrainerMultiple(object):
 
                 # clear CUDA cache to reduce memory fragmentation
                 if (
-                        self.cuda
-                        and self.cfg.common.empty_cache_freq > 0
-                        and (
+                    self.cuda
+                    and self.cfg.common.empty_cache_freq > 0
+                    and (
                         (self.get_num_updates() + self.cfg.common.empty_cache_freq - 1)
                         % self.cfg.common.empty_cache_freq
-                )
-                        == 0
+                    )
+                    == 0
                 ):
                     torch.cuda.empty_cache()
 
-        if self.cfg.common.fp16 or self.cfg.common.amp:
+        if self.cfg.common.fp16:
             metrics.log_scalar(
                 "loss_scale",
-                (
-                    self._optimizer.scaler.loss_scale
-                    if self.cfg.common.fp16
-                    else self._optimizer.scaler.get_scale()
-                ),
+                self._optimizer.scaler.loss_scale,
                 priority=700,
                 round=4,
                 weight=0,
             )
             metrics.log_scalar(
-                "loss_scale_classifier",
-                (
-                    self._optimizer_classifier.scaler.loss_scale
-                    if self.cfg.common.fp16
-                    else self._optimizer_classifier.scaler.get_scale()
-                ),
+                "loss_scale2",
+                self._optimizer2.scaler.loss_scale,
                 priority=700,
                 round=4,
                 weight=0,
             )
+
         metrics.log_stop_time("train_wall")
         return logging_output
 
@@ -1138,15 +927,7 @@ class TrainerMultiple(object):
         """Do forward pass in evaluation mode."""
         if self.tpu:
             import torch_xla.core.xla_model as xm
-
             xm.rendezvous("valid_step")  # wait for all workers
-
-        # If EMA is enabled through store_ema=True
-        # and task.uses_ema is True, pass the EMA model as a keyword
-        # argument to the task.
-        extra_kwargs = {}
-        if self.cfg.ema.store_ema and getattr(self.task, "uses_ema", False):
-            extra_kwargs["ema_model"] = self.ema.get_model()
 
         with torch.no_grad():
             self.model.eval()
@@ -1156,7 +937,7 @@ class TrainerMultiple(object):
 
             try:
                 _loss, sample_size, logging_output = self.task.valid_step(
-                    sample, self.model, self.criterion, **extra_kwargs
+                    sample, self.model, self.criterion
                 )
             except RuntimeError as e:
                 if "out of memory" in str(e):
@@ -1196,8 +977,7 @@ class TrainerMultiple(object):
         return logging_output
 
     def zero_grad(self):
-        self._optimizer.zero_grad()
-        self._optimizer_classifier.zero_grad()
+        self.optimizer.zero_grad()
 
     def lr_step_begin_epoch(self, epoch):
         """Adjust the learning rate at the beginning of the epoch."""
@@ -1213,7 +993,8 @@ class TrainerMultiple(object):
 
     def lr_step_update(self):
         """Update the learning rate after each update."""
-        new_lr = self.lr_scheduler.step_update(self.get_num_updates())
+        # // 2 to account for LR schedule in alternative training
+        new_lr = self.lr_scheduler.step_update(self.get_num_updates() // 2)
         if isinstance(new_lr, dict):
             for k, v in new_lr.items():
                 metrics.log_scalar(f"lr_{k}", v, weight=0, priority=300)
@@ -1266,7 +1047,7 @@ class TrainerMultiple(object):
         elif name in {"valid_loss", "valid_nll_loss"}:
             # support for legacy train.py, which assumed these meters
             # are always initialized
-            k = name[len("valid_"):]
+            k = name[len("valid_") :]
             m = metrics.get_meter("valid", k)
             return m or meters.AverageMeter()
         elif name == "oom":
@@ -1284,10 +1065,14 @@ class TrainerMultiple(object):
         self._num_updates = num_updates
         self.lr_step_update()
         if self.quantizer:
-            self.quantizer.step_update(self._num_updates)
+            # // 2 to account for LR schedule in alternative training
+            self.quantizer.step_update(self._num_updates // 2)
         metrics.log_scalar("num_updates", self._num_updates, weight=0, priority=200)
+        self._optimizer.zero_grad()
+        self._optimizer2.zero_grad()
 
     def clip_grad_norm(self, clip_norm):
+
         def agg_norm_fn(total_norm):
             total_norm = total_norm.cuda().float() ** 2
             total_norm = distributed_utils.all_reduce(
@@ -1295,9 +1080,12 @@ class TrainerMultiple(object):
             )
             return total_norm ** 0.5
 
-        should_agg_norm = self.is_fsdp and (
+        should_agg_norm = (
+            self.cfg.distributed_training.ddp_backend == "fully_sharded"
+            and (
                 self.data_parallel_process_group is not None
                 or torch.distributed.is_initialized()
+            )
         )
         return self.optimizer.clip_grad_norm(
             clip_norm, aggregate_norm_fn=agg_norm_fn if should_agg_norm else None
@@ -1314,25 +1102,6 @@ class TrainerMultiple(object):
         """Aggregate training time in seconds."""
         return time.time() - self._start_time + self._previous_training_time
 
-    def _fp_convert_sample(self, sample):
-        def apply_half(t):
-            if t.dtype is torch.float32:
-                return t.to(dtype=torch.half)
-            return t
-
-        def apply_bfloat16(t):
-            if t.dtype is torch.float32:
-                return t.to(dtype=torch.bfloat16)
-            return t
-
-        if self.cfg.common.fp16:
-            sample = utils.apply_to_sample(apply_half, sample)
-
-        if self.cfg.common.bf16:
-            sample = utils.apply_to_sample(apply_bfloat16, sample)
-
-        return sample
-
     def _prepare_sample(self, sample, is_dummy=False):
         if sample == "DUMMY":
             raise Exception(
@@ -1343,17 +1112,10 @@ class TrainerMultiple(object):
 
         if sample is None or len(sample) == 0:
             assert (
-                    self._dummy_batch is not None and len(self._dummy_batch) > 0
+                self._dummy_batch is not None and len(self._dummy_batch) > 0
             ), "Invalid dummy batch: {}".format(self._dummy_batch)
             sample, _ = self._prepare_sample(self._dummy_batch, is_dummy=True)
             return sample, True
-
-        # Given that PCIe/NVLink bandwidth is significantly smaller than DRAM bandwidth
-        # it makes sense to do the format conversion on the CPU and then transfer
-        # a smaller buffer to the device. This also saves GPU memory capacity.
-
-        if self.cfg.common.on_cpu_convert_precision:
-            sample = self._fp_convert_sample(sample)
 
         if self.cuda:
             if self.pipeline_model_parallel:
@@ -1367,8 +1129,21 @@ class TrainerMultiple(object):
             # the dummy batch may not be on the appropriate device
             sample = utils.move_to_cuda(sample, device=self.device)
 
-        if not self.cfg.common.on_cpu_convert_precision:
-            sample = self._fp_convert_sample(sample)
+        def apply_half(t):
+            if t.dtype is torch.float32:
+                return t.half()
+            return t
+
+        def apply_bfloat16(t):
+            if t.dtype is torch.float32:
+                return t.to(dtype=torch.bfloat16)
+            return t
+
+        if self.cfg.common.fp16:
+            sample = utils.apply_to_sample(apply_half, sample)
+
+        if self.cfg.common.bf16:
+            sample = utils.apply_to_sample(apply_bfloat16, sample)
 
         if self._dummy_batch == "DUMMY":
             self._dummy_batch = sample
@@ -1388,10 +1163,10 @@ class TrainerMultiple(object):
             return False
         elif self.cfg.optimization.use_bmuf:
             return (
-                           self.get_num_updates() + 1
-                   ) % self.cfg.bmuf.global_sync_iter == 0 and (
-                           self.get_num_updates() + 1
-                   ) > self.cfg.bmuf.warmup_iterations
+                self.get_num_updates() + 1
+            ) % self.cfg.bmuf.global_sync_iter == 0 and (
+                self.get_num_updates() + 1
+            ) > self.cfg.bmuf.warmup_iterations
         else:
             return True
 
@@ -1404,10 +1179,10 @@ class TrainerMultiple(object):
         sys.stderr.flush()
 
     def _aggregate_logging_outputs(
-            self,
-            logging_outputs: List[Dict[str, Any]],
-            *extra_stats_to_sum,
-            ignore=False,
+        self,
+        logging_outputs: List[Dict[str, Any]],
+        *extra_stats_to_sum,
+        ignore=False,
     ):
         if self.task.__class__.logging_outputs_can_be_summed(self.get_criterion()):
             return self._fast_stat_sync_sum(
@@ -1419,10 +1194,10 @@ class TrainerMultiple(object):
             )
 
     def _all_gather_list_sync(
-            self,
-            logging_outputs: List[Dict[str, Any]],
-            *extra_stats_to_sum,
-            ignore=False,
+        self,
+        logging_outputs: List[Dict[str, Any]],
+        *extra_stats_to_sum,
+        ignore=False,
     ):
         """
         Sync logging outputs across workers. all_gather_list_sync is
@@ -1447,10 +1222,7 @@ class TrainerMultiple(object):
         return logging_outputs, extra_stats_to_sum
 
     def _fast_stat_sync_sum(
-            self,
-            logging_outputs: List[Dict[str, Any]],
-            *extra_stats_to_sum,
-            ignore=False,
+        self, logging_outputs: List[Dict[str, Any]], *extra_stats_to_sum, ignore=False,
     ):
         """
         Sync logging outputs across workers. fast_stat_sync_sum is
@@ -1498,12 +1270,8 @@ class TrainerMultiple(object):
             def is_consistent(tensor):
                 max_abs_diff = torch.max(torch.abs(tensor - tensor[0]))
                 return (
-                        (
-                                torch.isfinite(tensor).all()
-                                and (max_abs_diff / (tensor[0] + 1e-6) < 1e-6).all()
-                        )
-                        or (self.cfg.common.amp and not torch.isfinite(tensor).all())
-                    # in case of amp non-finite grads are fine
+                    torch.isfinite(tensor).all()
+                    and (max_abs_diff / (tensor[0] + 1e-6) < 1e-6).all()
                 )
 
             if not is_consistent(self._grad_norm_buf):
@@ -1527,7 +1295,7 @@ class TrainerMultiple(object):
 
     def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):
         if grad_norm is not None and (
-                not torch.is_tensor(grad_norm) or torch.isfinite(grad_norm)
+            not torch.is_tensor(grad_norm) or torch.isfinite(grad_norm)
         ):
             metrics.log_speed("ups", 1.0, priority=100, round=2)
             metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)
@@ -1587,11 +1355,9 @@ class TrainerMultiple(object):
 
     def _xla_markstep_and_send_to_cpu(self, data=None):
         import torch_xla.core.xla_model as xm
-
         xm.mark_step()
         if data is not None:
             from fairseq.utils import xla_device_to_cpu
-
             return xla_device_to_cpu(data)
 
 

@@ -6,4 +6,5 @@
 from .hub_interface import *  # noqa
 from .model import *  # noqa
 from .residual_drop_mbart import *
+from .adapter_transformer import *
 from .language_classification_transformer import *
