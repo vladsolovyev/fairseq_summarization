@@ -50,7 +50,6 @@ from .rotary_positional_embedding import RotaryPositionalEmbedding
 from .positional_encoding import (
     RelPositionalEncoding,
 )
-from .adapter_transformer_layer import *
 
 __all__ = [
     "AdaptiveInput",

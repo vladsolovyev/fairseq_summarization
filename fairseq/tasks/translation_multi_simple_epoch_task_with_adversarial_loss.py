@@ -3,27 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from fairseq.tasks import register_task
 import torch
 
-from fairseq.tasks.multilingual_translation_similarity_task import MultilingualTranslationSimilarityTask
+from fairseq.tasks import register_task
+from fairseq.tasks.translation_multi_simple_epoch import TranslationMultiSimpleEpochTask
 
 
 @register_task("translation_multi_simple_epoch_task_with_adversarial_loss")
-class MultilingualTranslationAdversarial(MultilingualTranslationSimilarityTask):
+class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleEpochTask):
     def __init__(self, args, langs, dicts, training):
         super().__init__(args, langs, dicts, training)
         assert args.encoder_langtok == "src"
 
         self.language_classifier_steps = args.language_classifier_steps
         self.language_classifier_one_vs_rest = args.language_classifier_one_vs_rest
-
-    def build_model(self, args):
-        model = super().build_model(args)
-        print("Encoder type", type(model.encoder))
-        print("Decoder type", type(model.decoder))
-
-        return model
 
     def classification_step(self, sample, model, criterion, optimizer, update_num, ignore_grad=False):
         # Improve classifier to distinguish source languages

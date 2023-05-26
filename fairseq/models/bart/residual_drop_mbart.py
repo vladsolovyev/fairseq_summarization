@@ -27,6 +27,9 @@ class BARTResidualDropModel(BARTModel):
     def build_decoder(cls, args, tgt_dict, embed_tokens):
         return ResidualDropTransformerDecoder(args, tgt_dict, embed_tokens)
 
+    def load_state_dict(self, state_dict, strict=True, model_cfg=None, args=None,):
+        return super().load_state_dict(state_dict, strict=False)
+
 
 class ResidualDropTransformerEncoder(TransformerEncoder):
     def __init__(self, args, dictionary, embed_tokens):
