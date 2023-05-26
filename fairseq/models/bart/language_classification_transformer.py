@@ -65,10 +65,11 @@ class LanguageClassificationTransformerEncoder(ResidualDropTransformerEncoder):
     def __init__(self, args, dictionary, embed_tokens):
         super().__init__(args, dictionary, embed_tokens)
 
+        output_dim = args.num_language_to_classify + 1 if args.language_classifier_one_vs_rest == 0 else 3
         self.language_classifier = ClassificationLayer(args=args,
                                                        input_dim=args.encoder_embed_dim,
                                                        middle_dim=args.classifier_middle_layer_size,
-                                                       output_dim=3)
+                                                       output_dim=output_dim)
 
     def forward_scriptable(
             self,

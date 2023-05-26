@@ -36,7 +36,6 @@ def train_summarization_model(data_dir,
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--lang-pairs", lang_pairs,
          "--enable-lang-ids",
-         "--num-language-to-classify", "3",
          "--optimizer", "adam",
          "--adam-eps", "1e-08",
          "--adam-betas", "(0.9, 0.999)",
@@ -88,7 +87,9 @@ def train_summarization_model(data_dir,
     if use_adversarial_loss:
         sys.argv.extend(["--arch", "language_classification_transformer",
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
-                         "--criterion", "language_classification_cross_entropy"])
+                         "--criterion", "language_classification_cross_entropy",
+                         "--num-language-to-classify", "3",
+                         "--language-classifier-one-vs-rest", "0"])
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
