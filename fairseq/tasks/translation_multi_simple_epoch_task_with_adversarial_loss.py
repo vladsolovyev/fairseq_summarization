@@ -30,7 +30,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
                           sample,
                           classification_step=True,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
-                          print_predictions=(update_num % 100 == 0))
+                          print_predictions=(update_num % 500 == 0))
         if ignore_grad:
             loss *= 0
         with torch.autograd.profiler.record_function("backward"):
@@ -48,7 +48,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
                           sample,
                           classification_step=False,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
-                          print_predictions=(update_num % 100 == 0))
+                          print_predictions=(update_num % 500 == 0))
         if ignore_grad:
             loss *= 0
         with torch.autograd.profiler.record_function("backward"):
