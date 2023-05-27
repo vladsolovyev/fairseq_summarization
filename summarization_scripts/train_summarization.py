@@ -29,7 +29,7 @@ def train_summarization_model(data_dir,
          "--decoder-normalize-before",
          "--layernorm-embedding",
          "--sampling-method", "temperature",
-         "--sampling-temperature", "1.5",
+         "--sampling-temperature", "20",
          "--encoder-langtok", "src",
          "--decoder-langtok",
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"
