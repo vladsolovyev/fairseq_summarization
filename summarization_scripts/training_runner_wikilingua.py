@@ -23,7 +23,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
     free_memory()
 
     for language in languages[2:]:
-        metrics["{}-baseline".format(language)] = \
+        metrics["{}_baseline".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language,
                                             target_language="en_XX",
@@ -44,7 +44,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
                               freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
     for language in languages[2:]:
-        metrics["{}_monolingual".format(language)] = \
+        metrics["{}_mono".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language,
                                             target_language="en_XX",
@@ -65,7 +65,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
                                   max_update="75000",
                                   use_adversarial_loss=True)
         for language in languages[2:]:
-            metrics["{}_monolingual".format(language)] = \
+            metrics["{}_mono_adv".format(language)] = \
                 generate_and_evaluate_summaries(directory="wikilingua",
                                                 source_language=language,
                                                 target_language="en_XX",
