@@ -43,15 +43,6 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers)
     free_memory()
-    if use_adversarial_loss:
-        monolingual_checkpoint_dir = "{}/monolingual_with_classifier".format(output_dir)
-        train_summarization_model(data_dir="wikilingua",
-                                  lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[1:]]),
-                                  checkpoint="{}/monolingual/checkpoint_best.pt".format(output_dir),
-                                  save_dir=monolingual_checkpoint_dir,
-                                  encoder_drop_residual=encoder_drop_residual,
-                                  freeze_encoder_layers=freeze_encoder_layers,
-                                  use_adversarial_loss=True)
     for language in languages[2:]:
         metrics["{}_monolingual".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
@@ -63,6 +54,27 @@ def run_wikilingua_experiments(encoder_drop_residual=None, prefix="", freeze_enc
                                             min_len=min_len)
         save_metrics(metrics, output_dir)
         free_memory()
+    if use_adversarial_loss:
+        monolingual_checkpoint_dir = "{}/monolingual_with_classifier".format(output_dir)
+        train_summarization_model(data_dir="wikilingua",
+                                  lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[1:]]),
+                                  checkpoint="{}/monolingual/checkpoint_best.pt".format(output_dir),
+                                  save_dir=monolingual_checkpoint_dir,
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers,
+                                  max_update="75000",
+                                  use_adversarial_loss=True)
+        for language in languages[2:]:
+            metrics["{}_monolingual".format(language)] = \
+                generate_and_evaluate_summaries(directory="wikilingua",
+                                                source_language=language,
+                                                target_language="en_XX",
+                                                lang_pairs="{}-en_XX".format(language),
+                                                checkpoint="{}/checkpoint_last.pt".format(monolingual_checkpoint_dir),
+                                                lenpen=lenpen,
+                                                min_len=min_len)
+            save_metrics(metrics, output_dir)
+            free_memory()
 
     # few shot experiments.
     # Tune monolingual model using few data from spanish-english and russian-english datasets

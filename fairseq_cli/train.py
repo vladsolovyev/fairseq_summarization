@@ -421,7 +421,8 @@ def validate_and_save(
         )
 
     do_save = (
-        (end_of_epoch and epoch_itr.epoch % cfg.checkpoint.save_interval == 0)
+        (end_of_epoch and epoch_itr.epoch % cfg.checkpoint.save_interval == 0
+         and not cfg.checkpoint.no_epoch_checkpoints)
         or should_stop
         or (
             cfg.checkpoint.save_interval_updates > 0

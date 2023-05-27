@@ -44,7 +44,7 @@ def train_summarization_model(data_dir,
          "--power", "1",
          "--end-learning-rate", "5e-9",
          "--clip-norm", "0.1",
-         "--total-num-update", "120000",
+         "--total-num-update", max_update,
          "--weight-decay", "0.01",
          "--dropout", "0.1",
          "--attention-dropout", "0.1",
@@ -59,7 +59,6 @@ def train_summarization_model(data_dir,
          "--reset-lr-scheduler",
          "--max-update", max_update,
          "--keep-best-checkpoints", "1",
-         "--no-last-checkpoints",
          "--patience", "1",
          "--truncate-source",
          "--lang-tok-style", "mbart",
@@ -89,11 +88,13 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
                          "--num-language-to-classify", "3",
-                         "--language-classifier-one-vs-rest", "0"])
+                         "--language-classifier-one-vs-rest", "0",
+                         "--disable-validation"])
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
-                         "--criterion", "cross_entropy"])
+                         "--criterion", "cross_entropy",
+                         "--no-last-checkpoints"])
     train.cli_main()
     sys.argv = sys.argv[:1]
 
