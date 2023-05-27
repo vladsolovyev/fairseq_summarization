@@ -130,8 +130,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                             classification_step=True,
                                             language_classifier_one_vs_rest=0,
                                             print_predictions=False):
-        # net_input["src_tokens"] is B x T
-        # Take first src token (src lang ID). B
         src_lang_target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).to(device)
 
         encoder_classification_out = net_output[1]["classification_out"]
@@ -144,14 +142,11 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             print(src_lang_target)
             exit()
 
-        # print("pred shape 1", F.log_softmax(src_lang_pred.float(), dim=-1).shape)
-        # print("pred shape 2", model.get_normalized_probs(src_lang_pred, log_probs=True).shape) <-- this eats the 1st dim
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)  # softmax
         if print_predictions:
             print("Target: {}".format(src_lang_target))
             print("Predictions: {}".format(torch.mean(lprobs, 0)))
         target = src_lang_target.repeat(max_len, 1)  # B --> T x B
-        # Get indices
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
         src_one_lang_idx = target == language_classifier_one_vs_rest
         # print("ONE LANG", src_one_lang_idx)
@@ -333,21 +328,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             type=float,
             metavar="D",
             help="epsilon for label smoothing, 0 means no label smoothing",
-        )
-
-        parser.add_argument(
-            "--similarity-regularization-weight",
-            default=0.0,
-            type=float,
-            metavar="D",
-            help="weight for similarity regularization, 0 means no similarity regularization",
-        )
-
-        parser.add_argument(
-            "--actual-vocab-size",
-            default=256000,
-            type=int,
-            help="Actual vocab size without language tokens",
         )
 
         parser.add_argument(
