@@ -29,7 +29,7 @@ def train_summarization_model(data_dir,
          "--decoder-normalize-before",
          "--layernorm-embedding",
          "--sampling-method", "temperature",
-         "--sampling-temperature", "1.5",
+         "--sampling-temperature", "20",
          "--encoder-langtok", "src",
          "--decoder-langtok",
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"
@@ -44,7 +44,7 @@ def train_summarization_model(data_dir,
          "--power", "1",
          "--end-learning-rate", "5e-9",
          "--clip-norm", "0.1",
-         "--total-num-update", "120000",
+         "--total-num-update", max_update,
          "--weight-decay", "0.01",
          "--dropout", "0.1",
          "--attention-dropout", "0.1",
@@ -59,7 +59,6 @@ def train_summarization_model(data_dir,
          "--reset-lr-scheduler",
          "--max-update", max_update,
          "--keep-best-checkpoints", "1",
-         "--no-last-checkpoints",
          "--patience", "1",
          "--truncate-source",
          "--lang-tok-style", "mbart",
@@ -87,11 +86,13 @@ def train_summarization_model(data_dir,
     if use_adversarial_loss:
         sys.argv.extend(["--arch", "language_classification_transformer",
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
-                         "--criterion", "language_classification_cross_entropy"])
+                         "--criterion", "language_classification_cross_entropy",
+                         "--disable-validation"])
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
-                         "--criterion", "cross_entropy"])
+                         "--criterion", "cross_entropy",
+                         "--no-last-checkpoints"])
     train.cli_main()
     sys.argv = sys.argv[:1]
 

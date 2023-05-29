@@ -22,7 +22,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         model.set_num_updates(update_num)
         with torch.autograd.profiler.record_function("forward"):
             loss, classifier_loss, encoder_loss, sample_size, logging_output =\
-                criterion(model, sample, print_predictions=(update_num % 100 == 0))
+                criterion(model, sample, print_predictions=(update_num % 500 == 0))
         if ignore_grad:
             loss *= 0
             classifier_loss *= 0
