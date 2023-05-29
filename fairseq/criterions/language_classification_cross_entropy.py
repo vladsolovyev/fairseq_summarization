@@ -9,6 +9,7 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 from torch import tensor
+from torch.nn import KLDivLoss
 
 from fairseq import metrics
 from fairseq import utils
@@ -124,9 +125,9 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             self.eps,
             reduce=reduce
         )
-        lprobs_mse = lprobs.clone()
-        lprobs_mse[src_pad_idx] = target_equal_probabilities[src_pad_idx]
-        encoder_loss = torch.nn.MSELoss()(lprobs_mse, target_equal_probabilities)
+        lprobs_encoder = lprobs.clone()
+        lprobs_encoder[src_pad_idx] = target_equal_probabilities[src_pad_idx]
+        encoder_loss = KLDivLoss(reduction="sum", log_target=True)(lprobs_encoder, target_equal_probabilities)
 
         stats_per_lang = {}
         unique_targets = torch.unique(target, sorted=True)
