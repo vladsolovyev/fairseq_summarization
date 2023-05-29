@@ -923,7 +923,7 @@ class TrainerMultiple(object):
 
         overflow = False
         optimizers = [self._optimizer, self._optimizer_classifier]
-        losses = [loss + classifier_loss, classifier_loss]
+        losses = [loss + encoder_loss, classifier_loss]
         for i in range(len(optimizers)):
             optimizer = optimizers[i]
             loss = losses[i]

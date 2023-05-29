@@ -125,9 +125,11 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             self.eps,
             reduce=reduce
         )
-        lprobs_encoder = lprobs.clone()
-        lprobs_encoder[src_pad_idx] = target_equal_probabilities[src_pad_idx]
-        encoder_loss = KLDivLoss(reduction="sum", log_target=True)(lprobs_encoder, target_equal_probabilities)
+        encoder_loss = self.encoder_output_nll_loss(
+            lprobs_classifier,
+            target,
+            reduce=reduce
+        )
 
         stats_per_lang = {}
         unique_targets = torch.unique(target, sorted=True)
@@ -148,6 +150,19 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         n_total = torch.sum(mask)
 
         return classifier_loss, classifier_nll_loss, encoder_loss, n_correct, n_total, stats_per_lang
+
+    def encoder_output_nll_loss(self, lprobs, target, ignore_index=None, reduce=True):
+        if target.dim() == lprobs.dim() - 1:
+            target = target.unsqueeze(-1)
+        encoder_loss = torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
+        if ignore_index is not None:
+            pad_mask = target.eq(ignore_index)
+            encoder_loss.masked_fill_(pad_mask, 0.0)
+        else:
+            encoder_loss = encoder_loss.squeeze(-1)
+        if reduce:
+            encoder_loss = encoder_loss.sum()
+        return encoder_loss
 
     @classmethod
     def reduce_metrics(cls, logging_outputs) -> None:
