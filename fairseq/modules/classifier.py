@@ -22,7 +22,7 @@ class ClassificationLayer(nn.Module):
         if self.clone_input:
             x = x.clone()
         if self.training:
-            x = grad_reverse(x, self.grad_reversal_scaling_factor)
+            x = grad_reverse(x)
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
