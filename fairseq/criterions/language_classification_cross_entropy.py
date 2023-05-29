@@ -9,7 +9,6 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 from torch import tensor
-from torch.nn import KLDivLoss
 
 from fairseq import metrics
 from fairseq import utils
@@ -21,6 +20,14 @@ if torch.cuda.is_available():
 else:
     device = torch.device("cpu")
 lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
+
+
+def encoder_output_nll_loss(lprobs, target):
+    if target.dim() == lprobs.dim() - 1:
+        target = target.unsqueeze(-1)
+    encoder_loss = torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
+    encoder_loss = encoder_loss.sum()
+    return encoder_loss
 
 
 @register_criterion("language_classification_cross_entropy")
@@ -99,37 +106,18 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         encoder_classification_out = net_output[1]["classification_out"]
         max_len, batch_size, _ = encoder_classification_out.shape
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)
-        equal_probabilities = tensor(1 / len(lang_dict)).repeat(len(lang_dict))
-        equal_probabilities = F.log_softmax(equal_probabilities, -1)
-        target_equal_probabilities = equal_probabilities.repeat(max_len * batch_size, 1).to(device)
-        padding_probabilities = tensor([1e-8, 1e-8, 1e-8]).repeat(batch_size, 1).to(device)
-        if torch.cuda.is_available():
-            target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).cuda()
-        else:
-            target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]])
+        target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).to(device)
         if print_predictions:
             print("Target: {}".format(target))
             print("Predictions: {}".format(torch.mean(lprobs, 0)))
-        padding_probabilities[:, target] = 1
-        padding_probabilities = F.log_softmax(padding_probabilities, -1).repeat(max_len, 1, 1)
-        padding_probabilities = padding_probabilities.view(-1, padding_probabilities.size(-1))
         target = target.repeat(max_len, 1)
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
         lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(-1)
-        lprobs_classifier = lprobs.clone()
-        lprobs_classifier[src_pad_idx] = padding_probabilities[src_pad_idx]
+        lprobs = lprobs[~src_pad_idx]
+        target = target[~src_pad_idx]
 
-        classifier_loss, classifier_nll_loss = label_smoothed_nll_loss(
-            lprobs_classifier,
-            target,
-            self.eps,
-            reduce=reduce
-        )
-        encoder_loss = self.encoder_output_nll_loss(
-            lprobs_classifier,
-            target,
-            reduce=reduce
-        )
+        classifier_loss, classifier_nll_loss = label_smoothed_nll_loss(lprobs, target, self.eps, reduce=reduce)
+        encoder_loss = encoder_output_nll_loss(lprobs, target)
 
         stats_per_lang = {}
         unique_targets = torch.unique(target, sorted=True)
@@ -150,19 +138,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         n_total = torch.sum(mask)
 
         return classifier_loss, classifier_nll_loss, encoder_loss, n_correct, n_total, stats_per_lang
-
-    def encoder_output_nll_loss(self, lprobs, target, ignore_index=None, reduce=True):
-        if target.dim() == lprobs.dim() - 1:
-            target = target.unsqueeze(-1)
-        encoder_loss = torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
-        if ignore_index is not None:
-            pad_mask = target.eq(ignore_index)
-            encoder_loss.masked_fill_(pad_mask, 0.0)
-        else:
-            encoder_loss = encoder_loss.squeeze(-1)
-        if reduce:
-            encoder_loss = encoder_loss.sum()
-        return encoder_loss
 
     @classmethod
     def reduce_metrics(cls, logging_outputs) -> None:
