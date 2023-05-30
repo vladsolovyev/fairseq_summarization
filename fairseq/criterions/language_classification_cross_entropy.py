@@ -21,6 +21,14 @@ else:
 lang_dict = dict({250004: tensor(1).to(device), 250005: tensor(2).to(device), 250021: tensor(3).to(device)})
 
 
+def encoder_output_nll_loss(lprobs, target):
+    if target.dim() == lprobs.dim() - 1:
+        target = target.unsqueeze(-1)
+    encoder_loss = torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
+    encoder_loss = encoder_loss.sum()
+    return encoder_loss
+
+
 @register_criterion("language_classification_cross_entropy")
 class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCriterion):
     def __init__(
@@ -107,10 +115,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                 "sample_size": sample_size,
             }
 
-            # if self.report_accuracy:
-            #     n_correct, total = self.compute_accuracy(model, net_output, sample)
-            #     logging_output["n_correct"] = utils.item(n_correct.data)
-            #     logging_output["total"] = utils.item(total.data)
             classifier_loss, classifier_nll_loss, _, _, _ = \
                 self.compute_encoder_classification_loss(sample["net_input"],
                                                          net_output,
@@ -136,12 +140,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         max_len, bsz, num_total_labels = encoder_classification_out.shape
         lang_target_padding = 0
 
-        if not torch.all(src_lang_target > 0):
-            print("Violating 1")
-            print(net_input["src_tokens"])
-            print(src_lang_target)
-            exit()
-
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)  # softmax
         if print_predictions:
             print("Target: {}".format(src_lang_target))
@@ -149,20 +147,12 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         target = src_lang_target.repeat(max_len, 1)  # B --> T x B
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
         src_one_lang_idx = target == language_classifier_one_vs_rest
-        # print("ONE LANG", src_one_lang_idx)
-        # print("OTHER LANG", ~src_one_lang_idx)
 
         if language_classifier_one_vs_rest != 0:  # Change target to binary
             target[torch.logical_and(src_one_lang_idx, ~src_pad_idx)] = 1
             target[torch.logical_and(~src_one_lang_idx, ~src_pad_idx)] = 2
 
         target[src_pad_idx] = lang_target_padding
-
-        if not torch.all(target < num_total_labels):
-            print("Violating 2")
-            # print("src", net_input["src_tokens"])
-            print("target", target)
-            exit()
 
         if self.ignore_prefix_size > 0:
             if getattr(lprobs, "batch_first", False):
@@ -183,13 +173,8 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                 reduce=reduce,
             )
         else:
-            loss, nll_loss = self.nll_loss_rev(
-                lprobs,
-                target,
-                self.eps,
-                ignore_index=lang_target_padding,
-                reduce=reduce,
-            )
+            loss = encoder_output_nll_loss(lprobs, target)
+            nll_loss = loss
 
         stats_per_lang = {}
         unique_targets = torch.unique(target, sorted=True)
@@ -210,52 +195,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         n_total = torch.sum(mask)
 
         return loss, nll_loss, n_correct, n_total, stats_per_lang
-
-    def nll_loss_rev(self, lprobs, target, epsilon, ignore_index=None, reduce=True):
-        # if target.dim() == lprobs.dim() - 1:
-        #     target = target.unsqueeze(-1)
-        # nll_loss = -lprobs.gather(dim=-1, index=target)
-        # smooth_loss = -lprobs.sum(dim=-1, keepdim=True)
-        # if ignore_index is not None:
-        #     pad_mask = target.eq(ignore_index)
-        #     nll_loss.masked_fill_(pad_mask, 0.0)
-        #     smooth_loss.masked_fill_(pad_mask, 0.0)
-        # else:
-        #     nll_loss = nll_loss.squeeze(-1)
-        #     smooth_loss = smooth_loss.squeeze(-1)
-        # if reduce:
-        #     nll_loss = nll_loss.sum()
-        #     smooth_loss = smooth_loss.sum()
-        # eps_i = epsilon / (lprobs.size(-1) - 1)
-        # loss = (1.0 - epsilon - eps_i) * nll_loss + eps_i * smooth_loss
-        # return loss, nll_loss
-
-        # Optim should maximize this value
-        # No label smoothing
-        # lprobs: (T x B) x |V|
-        # target: (T x B)   --> gtruth
-        if target.dim() == lprobs.dim() - 1:
-            target = target.unsqueeze(-1)
-        # nll_loss = -lprobs.gather(dim=-1, index=target)
-        ll_other_classes = (1.0 - lprobs.gather(dim=-1, index=target).exp())
-        if not torch.all(0.0 < ll_other_classes):
-            print("******** WARNING")
-            print(ll_other_classes)
-        if not torch.all(ll_other_classes <= 1):  # This fails
-            print("******** WARNING")
-            print(ll_other_classes)
-        nll_loss = -torch.log(ll_other_classes)  # nll of other classes
-
-        if ignore_index is not None:
-            pad_mask = target.eq(ignore_index)
-            nll_loss.masked_fill_(pad_mask, 0.0)
-        else:
-            nll_loss = nll_loss.squeeze(-1)
-        if reduce:
-            nll_loss = nll_loss.sum()
-        # eps_i = epsilon / (lprobs.size(-1) - 1)
-        loss = -nll_loss  # (1.0 - epsilon - eps_i) * nll_loss + eps_i * smooth_loss
-        return loss, nll_loss
 
     @classmethod
     def reduce_metrics(cls, logging_outputs) -> None:
