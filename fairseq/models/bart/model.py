@@ -93,6 +93,7 @@ class BARTModel(TransformerModel):
             return_all_hiddens=return_all_hiddens,
         )
         if self.cfg.use_language_embeddings_encoder_output:
+            encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0].clone()
             for i in range(len(prev_output_tokens[:, 0])):
                 encoder_out["encoder_out"][0][:, i, :] = encoder_out["encoder_out"][0][:, i, :] + \
                                                          self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[prev_output_tokens[i, 0].item()])
