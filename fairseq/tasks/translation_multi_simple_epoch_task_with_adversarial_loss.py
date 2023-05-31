@@ -72,6 +72,6 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
             loss, sample_size, logging_output = \
                 criterion(model,
                           sample,
-                          classification_step=True,
+                          classification_step=False,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest)
         return loss, sample_size, logging_output

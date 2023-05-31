@@ -8,6 +8,7 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 from torch import tensor
+from torch.nn import KLDivLoss
 
 from fairseq import metrics
 from fairseq import utils
@@ -18,15 +19,7 @@ if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
-lang_dict = dict({250004: tensor(1).to(device), 250005: tensor(2).to(device), 250021: tensor(3).to(device)})
-
-
-def encoder_output_nll_loss(lprobs, target):
-    if target.dim() == lprobs.dim() - 1:
-        target = target.unsqueeze(-1)
-    encoder_loss = torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
-    encoder_loss = encoder_loss.sum()
-    return encoder_loss
+lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
 
 
 @register_criterion("language_classification_cross_entropy")
@@ -43,7 +36,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             task, sentence_avg, label_smoothing, ignore_prefix_size, report_accuracy
         )
 
-    def forward(self, model, sample, reduce=True, classification_step=False, language_classifier_one_vs_rest=0, print_predictions=False):
+    def forward(self, model, sample, reduce=True, classification_step=False, language_classifier_one_vs_rest=-1, print_predictions=False):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -132,48 +125,32 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                             net_output,
                                             reduce=True,
                                             classification_step=True,
-                                            language_classifier_one_vs_rest=0,
+                                            language_classifier_one_vs_rest=-1,
                                             print_predictions=False):
-        src_lang_target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).to(device)
-
         encoder_classification_out = net_output[1]["classification_out"]
-        max_len, bsz, num_total_labels = encoder_classification_out.shape
-        lang_target_padding = 0
-
-        lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)  # softmax
+        max_len, batch_size, _ = encoder_classification_out.shape
+        lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)
+        target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).to(device)
         if print_predictions:
-            print("Target: {}".format(src_lang_target))
+            print("Target: {}".format(target))
             print("Predictions: {}".format(torch.mean(lprobs, 0)))
-        target = src_lang_target.repeat(max_len, 1)  # B --> T x B
+        target = target.repeat(max_len, 1)
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
-        src_one_lang_idx = target == language_classifier_one_vs_rest
-
-        if language_classifier_one_vs_rest != 0:  # Change target to binary
-            target[torch.logical_and(src_one_lang_idx, ~src_pad_idx)] = 1
-            target[torch.logical_and(~src_one_lang_idx, ~src_pad_idx)] = 2
-
-        target[src_pad_idx] = lang_target_padding
-
-        if self.ignore_prefix_size > 0:
-            if getattr(lprobs, "batch_first", False):
-                lprobs = lprobs[:, self.ignore_prefix_size:, :].contiguous()
-                target = target[:, self.ignore_prefix_size:].contiguous()
-            else:
-                lprobs = lprobs[self.ignore_prefix_size:, :, :].contiguous()
-                target = target[self.ignore_prefix_size:, :].contiguous()
-
-        lprobs, target = lprobs.view(-1, lprobs.size(-1)), target.view(-1)
+        if language_classifier_one_vs_rest > -1:  # Change target to binary
+            src_one_lang_idx = target == language_classifier_one_vs_rest
+            target[src_one_lang_idx] = 0
+            target[~src_one_lang_idx] = 1
+        lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(-1)
+        lprobs = lprobs[~src_pad_idx]
+        target = target[~src_pad_idx]
 
         if classification_step:
-            loss, nll_loss = label_smoothed_nll_loss(
-                lprobs,
-                target,
-                self.eps,
-                ignore_index=lang_target_padding,
-                reduce=reduce,
-            )
+            loss, nll_loss = label_smoothed_nll_loss(lprobs, target, self.eps, reduce=reduce)
         else:
-            loss = encoder_output_nll_loss(lprobs, target)
+            equal_probabilities = tensor(1 / len(lang_dict)).repeat(len(lang_dict))
+            equal_probabilities = F.log_softmax(equal_probabilities, -1)
+            target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)
+            loss = KLDivLoss(reduction="sum", log_target=True)(lprobs, target_equal_probabilities)
             nll_loss = loss
 
         stats_per_lang = {}

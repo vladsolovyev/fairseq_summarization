@@ -47,7 +47,7 @@ class LanguageClassificationTransformerModel(BARTResidualDropModel):
 
         parser.add_argument(
             "--language-classifier-one-vs-rest",
-            default=0,
+            default=-1,
             type=int,
             help="If non-zero, language classification will be binary (this class vs rest)",
         )
@@ -65,7 +65,7 @@ class LanguageClassificationTransformerEncoder(ResidualDropTransformerEncoder):
     def __init__(self, args, dictionary, embed_tokens):
         super().__init__(args, dictionary, embed_tokens)
 
-        output_dim = args.num_language_to_classify + 1 if args.language_classifier_one_vs_rest == 0 else 3
+        output_dim = args.num_language_to_classify if args.language_classifier_one_vs_rest == -1 else 2
         self.language_classifier = ClassificationLayer(args=args,
                                                        input_dim=args.encoder_embed_dim,
                                                        middle_dim=args.classifier_middle_layer_size,

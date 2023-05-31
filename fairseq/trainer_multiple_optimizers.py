@@ -243,9 +243,7 @@ class TrainerMultiple(object):
     @property
     def optimizer(self):
         if self._optimizer is None or self._optimizer2 is None:
-            print("||||||||||||||| BUILDING OPTIM")
             self._build_optimizer()
-
         if self._num_updates % 2 == 0:
             return self._optimizer
         else:
