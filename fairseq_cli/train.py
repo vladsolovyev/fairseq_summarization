@@ -326,7 +326,16 @@ def train(
     )
     progress.update_config(_flatten_config(cfg))
     if isinstance(trainer.lr_scheduler, PolynomialDecayLRSchedule):
-        total_num_update = min(trainer.lr_scheduler.total_num_update, cfg.optimization.max_update)
+        if cfg.optimization.max_update > 0:
+            num_update = cfg.optimization.max_update
+            if cfg.optimization.max_epoch > 0 and len(progress) * cfg.optimization.max_epoch < num_update:
+                num_update = len(progress) * cfg.optimization.max_epoch
+        else:
+            num_update = len(progress) * cfg.optimization.max_epoch
+        if num_update > 0:
+            total_num_update = num_update
+        else:
+            total_num_update = trainer.lr_scheduler.total_num_update
         trainer.lr_scheduler.cfg.total_num_update = total_num_update
         trainer.lr_scheduler.total_num_update = total_num_update
     if len(progress) * cfg.dataset.validate_interval < cfg.dataset.validate_interval_updates:

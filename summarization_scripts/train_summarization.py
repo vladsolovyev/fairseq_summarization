@@ -18,11 +18,11 @@ def train_summarization_model(data_dir,
                               use_language_embeddings_encoder_output=False,
                               encoder_drop_residual=None,
                               max_update="120000",
-                              validate_interval_updates="5000",
-                              validate_interval="1",
                               freeze_encoder_layers="0",
                               num_workers="16",
-                              use_adversarial_loss=False):
+                              use_adversarial_loss=False,
+                              validate=True,
+                              max_epoch=None):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -59,7 +59,6 @@ def train_summarization_model(data_dir,
          "--reset-lr-scheduler",
          "--max-update", max_update,
          "--keep-best-checkpoints", "1",
-         "--patience", "1",
          "--truncate-source",
          "--lang-tok-style", "mbart",
          "--num-workers", num_workers,
@@ -67,9 +66,6 @@ def train_summarization_model(data_dir,
          "--ddp-backend", "no_c10d",
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
-         "--validate-after-updates", "5",
-         "--validate-interval", validate_interval,
-         "--validate-interval-updates", validate_interval_updates,
          "--freeze-embeddings",
          "--freeze-encoder-layers", freeze_encoder_layers]
     )
@@ -88,13 +84,21 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
                          "--num-language-to-classify", "3",
-                         "--language-classifier-one-vs-rest", "0",
-                         "--disable-validation"])
+                         "--language-classifier-one-vs-rest", "-1"])
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
-                         "--criterion", "cross_entropy",
+                         "--criterion", "cross_entropy"])
+    if validate:
+        sys.argv.extend(["--validate-interval-updates", "5000",
+                         "--validate-after-updates", "30000",
+                         "--patience", "1",
                          "--no-last-checkpoints"])
+    else:
+        sys.argv.append("--disable-validation")
+    if max_epoch:
+        sys.argv.extend(["--max-epoch", max_epoch])
+
     train.cli_main()
     sys.argv = sys.argv[:1]
 
