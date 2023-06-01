@@ -37,7 +37,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         )
 
     def forward(self, model, sample, reduce=True, classification_step=False,
-                language_classifier_one_vs_rest=-1, print_predictions=False, validation=False):
+                language_classifier_one_vs_rest=-1, print_predictions=False):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -67,23 +67,15 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                 # This loss won't take part of backward
                 loss, nll_loss = self.compute_loss(model, net_output, sample, reduce=reduce)
 
-            logging_output = {
-                "loss": loss.data,
-                "nll_loss": nll_loss.data,
-                "ntokens": sample["ntokens"],
-                "nsentences": sample["target"].size(0),
-                "sample_size": sample_size,
-            }
-
             classifier_loss, classifier_nll_loss, n_correct, total, stats_per_lang = \
                 self.compute_encoder_classification_loss(sample["net_input"],
                                                          net_output,
                                                          classification_step=True,
                                                          language_classifier_one_vs_rest=language_classifier_one_vs_rest,
                                                          print_predictions=print_predictions)
-
-            logging_output["classifier_loss"] = classifier_loss.data
-            logging_output["classifier_nll_loss"] = classifier_nll_loss.data
+            logging_output = {"loss": loss.data, "nll_loss": nll_loss.data, "ntokens": sample["ntokens"],
+                              "nsentences": sample["target"].size(0), "sample_size": sample_size,
+                              "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
 
             if self.report_accuracy:
                 logging_output["n_correct"] = utils.item(n_correct.data)
@@ -108,10 +100,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                                          classification_step=False,
                                                          language_classifier_one_vs_rest=language_classifier_one_vs_rest,
                                                          print_predictions=print_predictions)
-            if validation:
-                loss = classifier_loss
-            else:
-                loss += classifier_loss
             logging_output = {"loss": loss.data, "nll_loss": nll_loss.data, "ntokens": sample["ntokens"],
                               "nsentences": sample["target"].size(0), "sample_size": sample_size,
                               "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
