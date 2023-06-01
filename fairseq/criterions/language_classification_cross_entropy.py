@@ -147,7 +147,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         if classification_step:
             loss, nll_loss = label_smoothed_nll_loss(lprobs, target, self.eps, reduce=reduce)
         else:
-            num_classes = len(lang_dict) if language_classifier_one_vs_rest > -1 else 2
+            num_classes = len(lang_dict) if language_classifier_one_vs_rest == -1 else 2
             equal_probabilities = tensor(1 / num_classes).repeat(num_classes)
             equal_probabilities = F.log_softmax(equal_probabilities, -1)
             target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)
