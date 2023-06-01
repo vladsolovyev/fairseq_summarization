@@ -94,7 +94,6 @@ class BARTModel(TransformerModel):
             return_all_hiddens=return_all_hiddens,
         )
         if self.cfg.use_language_embeddings_encoder_output:
-            encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0].clone()
             language_embeddings = \
                 torch.stack([self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[lang_id.item()])
                              for lang_id in tgt_lang_id], dim=0)
