@@ -81,7 +81,8 @@ class BARTModel(TransformerModel):
         return_all_hiddens: bool = True,
         alignment_layer: Optional[int] = None,
         alignment_heads: Optional[int] = None,
-        src_lang_id=None
+        src_lang_id=None,
+        tgt_lang_id=None
     ):
         if classification_head_name is not None:
             features_only = True
@@ -94,9 +95,10 @@ class BARTModel(TransformerModel):
         )
         if self.cfg.use_language_embeddings_encoder_output:
             encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0].clone()
-            for i in range(len(prev_output_tokens[:, 0])):
-                encoder_out["encoder_out"][0][:, i, :] = encoder_out["encoder_out"][0][:, i, :] + \
-                                                         self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[prev_output_tokens[i, 0].item()])
+            language_embeddings = \
+                torch.stack([self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[lang_id.item()])
+                             for lang_id in tgt_lang_id], dim=0)
+            encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0] + language_embeddings
 
         x, extra = self.decoder(
             prev_output_tokens,

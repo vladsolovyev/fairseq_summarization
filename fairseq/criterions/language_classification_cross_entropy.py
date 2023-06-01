@@ -56,7 +56,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         ####################################################
         """
         # 1) forward pass for src -> tgt
-        net_output = model(**sample["net_input"])
+        net_output = model(tgt_lang_id=sample["tgt_lang_id"], **sample["net_input"])
         sample_size = (
             sample["target"].size(0) if self.sentence_avg else sample["ntokens"]
         )
