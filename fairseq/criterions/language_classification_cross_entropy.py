@@ -36,7 +36,8 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             task, sentence_avg, label_smoothing, ignore_prefix_size, report_accuracy
         )
 
-    def forward(self, model, sample, reduce=True, classification_step=False, language_classifier_one_vs_rest=-1, print_predictions=False):
+    def forward(self, model, sample, reduce=True, classification_step=False,
+                language_classifier_one_vs_rest=-1, print_predictions=False, validation=False):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -114,7 +115,10 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                                          classification_step=False,
                                                          language_classifier_one_vs_rest=language_classifier_one_vs_rest,
                                                          print_predictions=print_predictions)
-            loss += classifier_loss
+            if validation:
+                loss = classifier_loss
+            else:
+                loss += classifier_loss
             logging_output["classifier_loss"] = classifier_loss.data
             logging_output["classifier_nll_loss"] = classifier_nll_loss.data
 
@@ -133,7 +137,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         target = tensor([lang_dict[x.item()] for x in net_input["src_lang_id"]]).to(device)
         if print_predictions:
             print("Target: {}".format(target))
-            print("Predictions: {}".format(torch.mean(lprobs, 0)))
+            print("Predictions: {}".format(torch.mean(lprobs.exp(), 0)))
         target = target.repeat(max_len, 1)
         src_pad_idx = net_input["src_tokens"].eq(self.padding_idx).transpose(0, 1)
         if language_classifier_one_vs_rest > -1:  # Change target to binary
