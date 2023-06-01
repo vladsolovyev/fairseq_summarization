@@ -101,13 +101,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         else:
             # Translation step, together with fooling classifier
             loss, nll_loss = self.compute_loss(model, net_output, sample, reduce=reduce)
-            logging_output = {
-                "loss": loss.data,
-                "nll_loss": nll_loss.data,
-                "ntokens": sample["ntokens"],
-                "nsentences": sample["target"].size(0),
-                "sample_size": sample_size,
-            }
 
             classifier_loss, classifier_nll_loss, _, _, _ = \
                 self.compute_encoder_classification_loss(sample["net_input"],
@@ -119,8 +112,9 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                 loss = classifier_loss
             else:
                 loss += classifier_loss
-            logging_output["classifier_loss"] = classifier_loss.data
-            logging_output["classifier_nll_loss"] = classifier_nll_loss.data
+            logging_output = {"loss": loss.data, "nll_loss": nll_loss.data, "ntokens": sample["ntokens"],
+                              "nsentences": sample["target"].size(0), "sample_size": sample_size,
+                              "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
 
             return loss, sample_size, logging_output
 
