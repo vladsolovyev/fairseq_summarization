@@ -84,15 +84,16 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
                          "--num-language-to-classify", "3",
+                         "--patience", "2",
                          "--language-classifier-one-vs-rest", "-1"])
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
+                         "--patience", "1",
                          "--criterion", "cross_entropy"])
     if validate:
         sys.argv.extend(["--validate-interval-updates", "5000",
                          "--validate-after-updates", "30000",
-                         "--patience", "1",
                          "--no-last-checkpoints"])
     else:
         sys.argv.append("--disable-validation")
