@@ -84,7 +84,8 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
                          "--num-language-to-classify", "3",
-                         "--language-classifier-one-vs-rest", "-1"])
+                         "--language-classifier-one-vs-rest", "-1",
+                         "--log-interval", "101"])
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
