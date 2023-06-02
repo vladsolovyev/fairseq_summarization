@@ -73,7 +73,6 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                                          classification_step=True,
                                                          language_classifier_one_vs_rest=language_classifier_one_vs_rest,
                                                          print_predictions=print_predictions)
-            loss += classifier_loss
             logging_output = {"loss": loss.data, "nll_loss": nll_loss.data, "ntokens": sample["ntokens"],
                               "nsentences": sample["target"].size(0), "sample_size": sample_size,
                               "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
@@ -101,6 +100,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                                          classification_step=False,
                                                          language_classifier_one_vs_rest=language_classifier_one_vs_rest,
                                                          print_predictions=print_predictions)
+            loss += classifier_loss
             logging_output = {"loss": loss.data, "nll_loss": nll_loss.data, "ntokens": sample["ntokens"],
                               "nsentences": sample["target"].size(0), "sample_size": sample_size,
                               "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
