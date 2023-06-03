@@ -407,11 +407,18 @@ def validate_and_save(
 ) -> Tuple[List[Optional[float]], bool]:
     num_updates = trainer.get_num_updates()
     max_update = cfg.optimization.max_update or math.inf
+    max_epoch = cfg.optimization.max_epoch or math.inf
 
     # Stopping conditions (and an additional one based on validation loss later
     # on)
     should_stop = False
-    if num_updates >= max_update - 1:
+    if end_of_epoch and epoch_itr.epoch >= max_epoch:
+        should_stop = True
+        logger.info(
+            f"Stopping training due to "
+            f"number epochs: {epoch_itr.epoch} >= max_epoch: {max_epoch}"
+        )
+    elif num_updates >= max_update:
         should_stop = True
         logger.info(
             f"Stopping training due to "
