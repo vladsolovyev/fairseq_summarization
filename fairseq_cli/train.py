@@ -334,6 +334,7 @@ def train(
             num_update = len(progress) * cfg.optimization.max_epoch
         if num_update > 0:
             total_num_update = num_update
+            cfg.optimization.max_update = num_update
         else:
             total_num_update = trainer.lr_scheduler.total_num_update
         trainer.lr_scheduler.cfg.total_num_update = total_num_update
@@ -410,7 +411,7 @@ def validate_and_save(
     # Stopping conditions (and an additional one based on validation loss later
     # on)
     should_stop = False
-    if num_updates >= max_update:
+    if num_updates >= max_update - 1:
         should_stop = True
         logger.info(
             f"Stopping training due to "
