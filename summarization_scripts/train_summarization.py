@@ -22,7 +22,8 @@ def train_summarization_model(data_dir,
                               num_workers="16",
                               use_adversarial_loss=False,
                               validate=True,
-                              max_epoch=None):
+                              max_epoch=None,
+                              append_src_tok=True):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -99,6 +100,8 @@ def train_summarization_model(data_dir,
         sys.argv.append("--disable-validation")
     if max_epoch:
         sys.argv.extend(["--max-epoch", max_epoch])
+    if append_src_tok:
+        sys.argv.append("--append-src-tok")
 
     train.cli_main()
     sys.argv = sys.argv[:1]

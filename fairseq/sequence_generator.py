@@ -139,7 +139,7 @@ class SequenceGenerator(nn.Module):
         self,
         sample: Dict[str, Dict[str, Tensor]],
         prefix_tokens: Optional[Tensor] = None,
-        bos_token: Optional[int] = None,
+        bos_token: Optional[int] = None
     ):
         """Generate a batch of translations.
 
@@ -209,6 +209,7 @@ class SequenceGenerator(nn.Module):
         prefix_tokens: Optional[Tensor] = None,
         constraints: Optional[Tensor] = None,
         bos_token: Optional[int] = None,
+        use_language_embeddings_encoder_output=False
     ):
         incremental_states = torch.jit.annotate(
             List[Dict[str, Dict[str, Optional[Tensor]]]],
@@ -285,10 +286,10 @@ class SequenceGenerator(nn.Module):
         encoder_outs = self.model.reorder_encoder_out(encoder_outs, new_order)
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
-        model = self.model.single_model
-        if model.cfg.use_language_embeddings_encoder_output:
+        decoder = self.model.single_model.decoder
+        if use_language_embeddings_encoder_output:
             encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + \
-                                                model.decoder.language_embeddings_encoder_output(model.decoder.lang_dict[bos_token])
+                                                decoder.language_embeddings_encoder_output(decoder.lang_dict[bos_token])
 
         # initialize buffers
         scores = (

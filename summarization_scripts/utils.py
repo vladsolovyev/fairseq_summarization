@@ -42,14 +42,6 @@ def save_metrics(metrics, output_dir):
         new_metrics_df.to_csv(output_file, mode="w")
 
 
-def create_metrics_dict(baseline_dir):
-    baseline_file = "{}/metrics.csv".format(baseline_dir)
-    if Path(baseline_file).is_file():
-        return pd.read_csv(baseline_file, index_col=0).to_dict()
-    else:
-        return dict()
-
-
 def free_memory():
     showUtilization()
     gc.collect()
