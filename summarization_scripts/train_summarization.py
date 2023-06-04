@@ -23,7 +23,8 @@ def train_summarization_model(data_dir,
                               use_adversarial_loss=False,
                               validate=True,
                               max_epoch=None,
-                              append_src_tok=True):
+                              append_src_tok=True,
+                              validate_after_updates="30000"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -93,7 +94,7 @@ def train_summarization_model(data_dir,
                          "--criterion", "cross_entropy"])
     if validate:
         sys.argv.extend(["--validate-interval-updates", "5000",
-                         "--validate-after-updates", "30000",
+                         "--validate-after-updates", validate_after_updates,
                          "--patience", "1",
                          "--no-last-checkpoints"])
     else:

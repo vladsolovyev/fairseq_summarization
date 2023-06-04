@@ -127,7 +127,8 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   lang_pairs="{}-{}".format(language, language),
                                   checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
-                                  encoder_drop_residual=encoder_drop_residual)
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  validate_after_updates="2000")
         free_memory()
         metrics["{}_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
@@ -190,7 +191,8 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               lang_pairs="gu_IN-gu_IN",
                               checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir,
-                              encoder_drop_residual=encoder_drop_residual)
+                              encoder_drop_residual=encoder_drop_residual,
+                              validate_after_updates="2000")
     free_memory()
     metrics["gu_IN_multiEnEsRu_all"] = \
         generate_and_evaluate_summaries(directory="xlsum",
@@ -261,7 +263,8 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               checkpoint="{}/multiEnEsRu_with_classifier/checkpoint_last.pt".format(output_dir),
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
-                              append_src_tok=False)
+                              append_src_tok=False,
+                              validate_after_updates="2000")
     free_memory()
     metrics["gu_IN_multiEnEsRu_adv_all"] = \
         generate_and_evaluate_summaries(directory="xlsum",

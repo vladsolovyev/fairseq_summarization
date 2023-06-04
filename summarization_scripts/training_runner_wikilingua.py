@@ -114,7 +114,8 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                   checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
-                                  use_language_embeddings_encoder_output=use_language_embeddings_encoder_output)
+                                  use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
+                                  validate_after_updates="2000")
         free_memory()
         metrics["{}_mono_all".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
@@ -200,7 +201,8 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
                                   use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                                  append_src_tok=False)
+                                  append_src_tok=False,
+                                  validate_after_updates="2000")
         free_memory()
         metrics["{}_mono_adv_all".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
