@@ -1,4 +1,5 @@
 import shutil
+from pathlib import Path
 
 from summarization_scripts.generate_summaries import generate_and_evaluate_summaries
 from summarization_scripts.train_summarization import train_summarization_model
@@ -47,6 +48,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
 def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
                     freeze_encoder_layers="0", use_language_embeddings_encoder_output=False):
     output_dir = "{}/{}".format(experiments_folder, prefix)
+    Path(output_dir).mkdir(exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
                     "{}/metrics.csv".format(output_dir))
     metrics = dict()

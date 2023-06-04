@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 from summarization_scripts.training_runner_wikilingua import run_wikilingua_experiments, calculate_wikilingua_baseline
 from summarization_scripts.training_runner_xlsum import run_xlsum_experiments, calculate_xlsum_baseline
@@ -10,6 +11,7 @@ def main():
                                                            [calculate_wikilingua_baseline, calculate_xlsum_baseline, calculate_wikilingua_baseline],
                                                            ["wiki_results", "xlsum_results"]):
         experiments_folder = "{}/{}".format(folder, date)
+        Path(experiments_folder).mkdir(exist_ok=True)
         calculate_baseline(output_dir=experiments_folder)
 
         prefix = "no_drop_not_frozen"
