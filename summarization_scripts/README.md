@@ -5,24 +5,27 @@
 ### Datasets:
 1. [xl-sum](https://github.com/csebuetnlp/xl-sum)
    - Multilingual abstractive summarization. Multilingual monolingual article-summary pairs from BBC in 44 languages.
-   - I use 4 languages for my thesis: English, Spanish, Russian and Gujarati. Gujarati is a special case as it is a low-resource as well in the xl-sum dataset as in the pretraining of [mbart](https://arxiv.org/pdf/2001.08210.pdf)
-   - For training, I remove some samples which have very short articles (not more than 20 sentence parts) or very short summaries (not more than 10 sentence parts).
-   - Original statistic and baselines are provided on the [xl-sum github webpage](https://github.com/csebuetnlp/xl-sum)
-   - Statistic after removing some samples from the training subset: [stat_xlsum.txt](../summarization_datasets/stat_xlsum.txt)
+   - In my thesis, I utilize four languages: English, Spanish, Russian, and Gujarati. Gujarati is a special case since it is considered a low-resource language both in the xl-sum dataset and in the pretraining of [mBART](https://arxiv.org/pdf/2001.08210.pdf)
+   - For training, I exclude certain samples that have very short articles (consisting of no more than 20 sentence parts) or very short summaries (consisting of no more than 10 sentence parts).
+   - Original statistics and baselines are available on the [xl-sum GitHub webpage](https://github.com/csebuetnlp/xl-sum)
+   - The statistics after removing some samples from the training subset can be found in the file [stat_xlsum.txt](../summarization_datasets/stat_xlsum.txt)
    - [Script for parsing](../summarization_datasets/prepare_data_xlsum.py)
    - [Paper describing the dataset](https://aclanthology.org/2021.findings-acl.413.pdf)
 2. [Wikilingua](https://github.com/esdurmus/Wikilingua)
    - article and summary pairs from [WikiHow](https://www.wikihow.com/Main-Page).
    - Multilingual monolingual and multilingual cross-lingual data in 18 languages.
-   - I use monolingual (english, spanish and russian) and cross-lingual (spanish-english, russian-english and turkish-english) data for experiments. Evaluation is done using cross-lingual (spanish-english, russian-english and turkish-english) as in the baseline.
-   - Baseline and description of the dataset can be found in the [paper](https://arxiv.org/pdf/2010.03093.pdf).
-   - Statistic of the dataset: [stat_wikilingua.txt](../summarization_datasets/stat_wikilingua.txt)
+   - For my experiments, I utilize monolingual data in English, Spanish, and Russian, as well as cross-lingual data pairs such as Spanish-English, Russian-English, and Turkish-English. The evaluation is conducted using the same cross-lingual pairs (Spanish-English, Russian-English, and Turkish-English) as used in the baseline.
+   - The baseline and a detailed description of the dataset can be found in the [paper](https://arxiv.org/pdf/2010.03093.pdf).
+   - The statistics of the dataset can be found in the file: [stat_wikilingua.txt](../summarization_datasets/stat_wikilingua.txt)
    - [Script for parsing](../summarization_datasets/prepare_data_wikilingua.py)
 
 ### Experiments
 
 #### xl-sum
-1. en_XX_baseline, es_XX_baseline, ru_RU_baseline, gu_IN_baseline - baseline model trained using monolingual english, spanish, russian and gujarati data together.
+
+Research question: How to create monolingual summaries of text in low-resource languages (zero-shot and few-shot), given only monolingual data in other languages and a pretrained mBart model?
+
+1. en_XX_baseline, es_XX_baseline, ru_RU_baseline, gu_IN_baseline - the baseline model is trained using a combination of monolingual English, Spanish, Russian, and Gujarati data.
 2. en_XX - monolingual model trained and evaluated using only english data.
 3. es_XX_zero, ru_RU_zero, gu_IN_zero - use monolingual english model from the experiment no. 2 and perform zero-shot experiments using test data of spanish, russian and gujarati
 4. es_XX_translated, ru_RU_translated, gu_IN_translated - translate test data of spanish, russian and gujarati into english, create summaries in english using monolingual english model from the experiment no. 2, translate summaries back into spanish, russian and gujarati, and evaluate using test datasets of these languages.
@@ -38,10 +41,13 @@
 - TODO: add evaluation using [flan-ul2](https://huggingface.co/google/flan-ul2)
 - [Experiments runner](./training_runner_xlsum.py)
 - TODO: update all results as experiments have been changed
-- All experiments are run in 4 possible configurations:
-  - one of three options: residual connections drop (4th layer); parameters freezing of the first 6 layers, none of both
+- All experiments are run in 3 possible configurations:
+   - one of three options: residual connections drop (4th layer); parameters freezing of the first 6 layers, none of both
 
 #### Wikilingua
+
+Research question: How to create cross-lingual summaries of text (zero-shot and few-shot), given only monolingual data in those languages and a pretrained mBart model? Additionally, test a scenario where the input language is unseen during training.
+
 1. es_XX_baseline, ru_RU_baseline, tr_TR_baseline - three crosslingual cases (spanish-english, russian-english and turkish-english) trained separately as a baseline
 2. es_XX_mono, ru_RU_mono, tr_TR_mono - firstly a multilingual model is trained using monolingual training data of three languages(english, spanish and russian). After that, three cross-lingual cases (spanish-english, russian-english and turkish-english) are evaluated separately using test data without any fine-tuning.
 3. es_XX_mono_10/100/1000/10000, ru_RU_mono_10/100/1000/10000, tr_TR_mono_10/100/1000 - few shot experiments. Tune multilingual model from the experiment no. 2 using few data from spanish-english, russian-english and turkish-english datasets
@@ -69,6 +75,6 @@
 
 ### Configuration explanation
 - An idea of residual connections drop is described in the [paper](https://aclanthology.org/2021.acl-long.101.pdf). An example is [here](https://github.com/dannigt/fairseq/tree/master/examples/residual_drop)
-- Parameters freezing of the first 6 layers allows the use of transfer learning from the pretrained mBart model and not to over-fit to specific language.
-- Adversarial loss implementation leads to better language-independent representations and better zero-shot cross-lingual summarization. An idea is taken from the [first](https://arxiv.org/pdf/2211.01292.pdf) and the [second](https://arxiv.org/pdf/1903.07091.pdf) papers. An implementation is partly copied and adopted from [here](https://github.com/dannigt/fairseq/tree/master/examples/adapter_transformer)
-- Language embeddings for an encoder output can help to output an expected language. I just add embeddings to encoder outputs.
+- Freezing the parameters of the first 6 layers enables the utilization of transfer learning from the pretrained mBart model, while preventing overfitting to specific languages.
+- The implementation of an adversarial loss contributes to the improvement of language-independent representations and enhances zero-shot cross-lingual summarization. The idea behind this approach is derived from both the [first](https://arxiv.org/pdf/2211.01292.pdf) and the [second](https://arxiv.org/pdf/1903.07091.pdf) papers, while the implementation itself is partially copied and adapted from [here](https://github.com/dannigt/fairseq/tree/master/examples/adapter_transformer).
+- Adding language embeddings to the encoder outputs can assist in generating the desired language in the output.
