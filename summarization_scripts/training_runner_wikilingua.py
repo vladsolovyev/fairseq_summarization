@@ -14,13 +14,13 @@ def calculate_wikilingua_baseline(output_dir=""):
     shutil.copyfile("baselines/wiki_benchmark.csv", "{}/metrics.csv".format(output_dir))
     metrics = dict()
 
-    # three crosslingual cases (spanish-english, russian-english and turkish-english) together as baseline
-    checkpoint_dir = "{}/baseline".format(output_dir)
-    train_summarization_model(data_dir="wikilingua",
-                              lang_pairs=",".join(["{}-en_XX".format(language) for language in languages[1:]]),
-                              save_dir=checkpoint_dir)
-    free_memory()
+    # three crosslingual cases (spanish-english, russian-english and turkish-english) separately as baseline
     for language in languages[1:]:
+        checkpoint_dir = "{}/baseline_{}".format(output_dir, language)
+        train_summarization_model(data_dir="wikilingua",
+                                  lang_pairs="{}-en_XX".format(language),
+                                  save_dir=checkpoint_dir)
+        free_memory()
         metrics["{}_baseline".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language,
@@ -31,7 +31,7 @@ def calculate_wikilingua_baseline(output_dir=""):
                                             min_len=min_len)
         save_metrics(metrics, output_dir)
         free_memory()
-    shutil.rmtree(checkpoint_dir)
+        shutil.rmtree(checkpoint_dir)
 
 
 def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder="", prefix="", freeze_encoder_layers="0"):
