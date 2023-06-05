@@ -48,7 +48,7 @@ Research question: How to create monolingual summaries of text in low-resource l
 
 Research question: How to create cross-lingual summaries of text (zero-shot and few-shot), given only monolingual data in those languages and a pretrained mBart model? Additionally, test a scenario where the input language is unseen during training.
 
-1. es_XX_baseline, ru_RU_baseline, tr_TR_baseline - three crosslingual cases (spanish-english, russian-english and turkish-english) trained separately as a baseline
+1. es_XX_baseline, ru_RU_baseline, tr_TR_baseline - three cross-lingual cases (spanish-english, russian-english and turkish-english) trained together as a baseline
 2. es_XX_mono, ru_RU_mono, tr_TR_mono - firstly a multilingual model is trained using monolingual training data of three languages(english, spanish and russian). After that, three cross-lingual cases (spanish-english, russian-english and turkish-english) are evaluated separately using test data without any fine-tuning.
 3. es_XX_mono_10/100/1000/10000, ru_RU_mono_10/100/1000/10000, tr_TR_mono_10/100/1000 - few shot experiments. Tune multilingual model from the experiment no. 2 using few data from spanish-english, russian-english and turkish-english datasets
 4. es_XX_mono_all, ru_RU_mono_all, tr_TR_mono_all - the same as no. 3 but fine-tuning three models separately with complete training data of spanish-english, russian-english and turkish-english datasets
