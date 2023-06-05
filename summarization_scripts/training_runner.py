@@ -11,7 +11,7 @@ def main():
                                                            [calculate_wikilingua_baseline, calculate_xlsum_baseline, calculate_wikilingua_baseline],
                                                            ["wiki_results", "xlsum_results"]):
         experiments_folder = "{}/{}".format(folder, date)
-        Path(experiments_folder).mkdir(exist_ok=True)
+        Path(experiments_folder).mkdir(parents=True, exist_ok=True)
         calculate_baseline(output_dir=experiments_folder)
 
         prefix = "no_drop_not_frozen"
