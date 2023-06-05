@@ -60,14 +60,14 @@ Research question: How to create cross-lingual summaries of text (zero-shot and 
 - TODO: add evaluation using [flan-ul2](https://huggingface.co/google/flan-ul2)
 - [Experiments runner](./training_runner_wikilingua.py)
 - TODO: update all results as experiments have been changed
+- All experiments are run in 6 possible configurations:
+  - one of three options: residual connections drop (4th layer); parameters freezing of the first 6 layers, none of both
+  - and one of two other options: with or without use of language embeddings for an encoder output
 
 ### Experiments setup
 - All experiments are run using [fairseq library](https://github.com/facebookresearch/fairseq)
 - [Script for training](./train_summarization.py)
 - [Script for summaries generation](./generate_summaries.py)
-- All experiments are run in 6 possible configurations:
-  - one of three options: residual connections drop (4th layer); parameters freezing of the first 6 layers, none of both
-  - and one of two other options: with or without use of language embeddings for an encoder output
 
 ### Metrics for evaluation
 - Rouge - [paper](https://aclanthology.org/W04-1013.pdf); [description with code examples](https://huggingface.co/spaces/evaluate-metric/rouge)
