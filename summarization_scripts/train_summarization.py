@@ -24,14 +24,15 @@ def train_summarization_model(data_dir,
                               validate=True,
                               max_epoch=None,
                               append_src_tok=True,
-                              validate_after_updates="30000"):
+                              validate_after_updates="30000",
+                              sampling_temperature="1.5"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
          "--decoder-normalize-before",
          "--layernorm-embedding",
          "--sampling-method", "temperature",
-         "--sampling-temperature", "20",
+         "--sampling-temperature", sampling_temperature,
          "--encoder-langtok", "src",
          "--decoder-langtok",
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"

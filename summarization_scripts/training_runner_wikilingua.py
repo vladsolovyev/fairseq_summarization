@@ -143,7 +143,8 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                               max_update="60000",
                               validate=False,
                               use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                              append_src_tok=False)
+                              append_src_tok=False,
+                              sampling_temperature="30")
     shutil.rmtree(monolingual_checkpoint_dir)
     # evaluate crosslingual cases: from spanish, russian, turkish into english
     for language in languages[1:]:

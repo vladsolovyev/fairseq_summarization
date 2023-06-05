@@ -217,7 +217,8 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               validate=False,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
-                              append_src_tok=False)
+                              append_src_tok=False,
+                              sampling_temperature="30")
     free_memory()
     for language in languages:
         metrics["{}_multiEnEsRu_adv".format(language)] = \
