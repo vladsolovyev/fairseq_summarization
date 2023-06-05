@@ -23,8 +23,9 @@ translation_to_mbart_language = dict({"es": "es_XX",
 mbart_lang_to_rouge_lang = dict({"en_XX": "english",
                                  "es_XX": "spanish",
                                  "ru_RU": "russian",
-                                 "gu_IN": "gujarati"})
-languages = ["en", "es", "ru", "gu"]
+                                 "gu_IN": "gujarati",
+                                 "tr_TR": "turkish"})
+languages = ["en", "es", "ru", "gu", "tr"]
 
 
 @dataclass
@@ -92,7 +93,7 @@ class RougeBertScoreScorer(BaseScorer):
 
     def rouge_and_bert_score(self):
         print("number of samples: {}".format(len(self.pred)))
-        if self.cfg.translate_to_lang in languages[1:]:
+        if self.cfg.translate_to_lang in languages[1:4]:
             self.cfg.lang = translation_to_mbart_language[self.cfg.translate_to_lang]
             self.pred = translation_model.translate(self.pred,
                                                     source_lang="en",

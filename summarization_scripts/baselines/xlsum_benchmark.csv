@@ -1,5 +1,5 @@
-,rouge1_with_stemming,rouge2_with_stemming,rougeL_with_stemming,rougeLsum_with_stemming,rouge1_without_stemming,rouge2_without_stemming,rougeL_without_stemming,rougeLsum_without_stemming,bert_score_precision,bert_score_recall,bert_score_f1,en_prob,es_prob,ru_prob,gu_prob,gen_len
-en_benchmark,37.601,15.1536,29.8817,,,,,,,,,,,,,
-es_benchmark,31.5071,11.8767,24.0746,,,,,,,,,,,,,
-gu_benchmark,21.9619,7.7417,19.86,,,,,,,,,,,,,
-ru_benchmark,32.2164,13.6386,26.1689,,,,,,,,,,,,,
+,rouge1_with_stemming,rouge2_with_stemming,rougeL_with_stemming,rougeLsum_with_stemming,rouge1_without_stemming,rouge2_without_stemming,rougeL_without_stemming,rougeLsum_without_stemming,bert_score_precision,bert_score_recall,bert_score_f1,en_prob,es_prob,ru_prob,gu_prob,tr_prob,gen_len
+en_benchmark,37.601,15.1536,29.8817,,,,,,,,,,,,,,
+es_benchmark,31.5071,11.8767,24.0746,,,,,,,,,,,,,,
+gu_benchmark,21.9619,7.7417,19.86,,,,,,,,,,,,,,
+ru_benchmark,32.2164,13.6386,26.1689,,,,,,,,,,,,,,
