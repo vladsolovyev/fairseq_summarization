@@ -19,7 +19,8 @@ def calculate_wikilingua_baseline(output_dir=""):
         checkpoint_dir = "{}/baseline_{}".format(output_dir, language)
         train_summarization_model(data_dir="wikilingua",
                                   lang_pairs="{}-en_XX".format(language),
-                                  save_dir=checkpoint_dir)
+                                  save_dir=checkpoint_dir,
+                                  validate_after_updates="11000")
         free_memory()
         metrics["{}_baseline".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
