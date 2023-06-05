@@ -24,7 +24,6 @@ def train_summarization_model(data_dir,
                               validate=True,
                               max_epoch=None,
                               append_src_tok=True,
-                              validate_after_updates="30000",
                               sampling_temperature="1.5"):
     sys.argv.extend(
         [data_dir,
@@ -95,7 +94,6 @@ def train_summarization_model(data_dir,
                          "--criterion", "cross_entropy"])
     if validate:
         sys.argv.extend(["--validate-interval-updates", "5000",
-                         "--validate-after-updates", validate_after_updates,
                          "--patience", "1",
                          "--no-last-checkpoints"])
     else:
