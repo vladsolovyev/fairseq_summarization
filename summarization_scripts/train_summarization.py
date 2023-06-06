@@ -24,7 +24,8 @@ def train_summarization_model(data_dir,
                               validate=True,
                               max_epoch=None,
                               append_src_tok=True,
-                              sampling_temperature="1.5"):
+                              sampling_temperature="1.5",
+                              label_smoothing="0.0"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -69,7 +70,8 @@ def train_summarization_model(data_dir,
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
          "--freeze-embeddings",
-         "--freeze-encoder-layers", freeze_encoder_layers]
+         "--freeze-encoder-layers", freeze_encoder_layers,
+         "--label-smoothing", label_smoothing]
     )
     if freeze_decoder_layers:
         sys.argv.append("--freeze-decoder-layers")
@@ -91,7 +93,7 @@ def train_summarization_model(data_dir,
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
-                         "--criterion", "cross_entropy"])
+                         "--criterion", "label_smoothed_cross_entropy"])
     if validate:
         sys.argv.extend(["--validate-interval-updates", "5000",
                          "--patience", "1",
