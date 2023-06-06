@@ -1,4 +1,4 @@
 ,rouge1_with_stemming,rouge2_with_stemming,rougeL_with_stemming,rougeLsum_with_stemming,rouge1_without_stemming,rouge2_without_stemming,rougeL_without_stemming,rougeLsum_without_stemming,bert_score_precision,bert_score_recall,bert_score_f1,en_prob,es_prob,ru_prob,gu_prob,tr_prob,gen_len
 es_Benchmark,38.30,15.37,32.40,,,,,,,,,,,,,,
 ru_Benchmark,32.91,11.83,27.69,,,,,,,,,,,,,,
-tu_Benchmark,33.68,12.74,27.62,,,,,,,,,,,,,,
+tr_Benchmark,33.68,12.74,27.62,,,,,,,,,,,,,,
