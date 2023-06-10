@@ -61,8 +61,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                               save_dir=monolingual_checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
-                              use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                              label_smoothing="0.1")
+                              use_language_embeddings_encoder_output=use_language_embeddings_encoder_output)
     free_memory()
     # evaluate crosslingual cases: from spanish, russian, turkish into english
     for language in languages[1:]:
@@ -93,8 +92,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
-                                      use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                                      label_smoothing="0.1")
+                                      use_language_embeddings_encoder_output=use_language_embeddings_encoder_output)
             free_memory()
             metrics["{}_mono_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="wikilingua",
@@ -117,10 +115,9 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                   checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
-                                  use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                                  label_smoothing="0.1")
+                                  use_language_embeddings_encoder_output=use_language_embeddings_encoder_output)
         free_memory()
-        metrics["{}_mono_all".format(language)] = \
+        metrics["{}_mono_All".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language,
                                             target_language="en_XX",
@@ -147,8 +144,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                               validate=False,
                               use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
                               append_src_tok=False,
-                              sampling_temperature="30",
-                              label_smoothing="0.1")
+                              sampling_temperature="30")
     shutil.rmtree(monolingual_checkpoint_dir)
     # evaluate crosslingual cases: from spanish, russian, turkish into english
     for language in languages[1:]:
@@ -181,8 +177,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                       validate=False,
                                       max_epoch=max_epoch,
                                       use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                                      append_src_tok=False,
-                                      label_smoothing="0.1")
+                                      append_src_tok=False)
             free_memory()
             metrics["{}_mono_adv_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="wikilingua",
@@ -207,8 +202,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
                                   use_language_embeddings_encoder_output=use_language_embeddings_encoder_output,
-                                  append_src_tok=False,
-                                  label_smoothing="0.1")
+                                  append_src_tok=False)
         free_memory()
         metrics["{}_mono_adv_all".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
