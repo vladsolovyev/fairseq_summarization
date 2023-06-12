@@ -56,10 +56,12 @@ class RougeBertScoreScorer(BaseScorer):
         rouge_result_with_stemming = dict()
         rouge_result_without_stemming = dict()
         if self.cfg.rouge_scorer == "huggingface":
-            rouge_result_with_stemming = evaluate.load("rouge").compute(predictions=self.pred, references=self.ref,
-                                                                        use_stemmer=True)
-            rouge_result_without_stemming = evaluate.load("rouge").compute(predictions=self.pred, references=self.ref,
-                                                                           use_stemmer=False)
+            rouge_result_with_stemming = evaluate.load("rouge", cache_dir="./cache").compute(predictions=self.pred,
+                                                                                             references=self.ref,
+                                                                                             use_stemmer=True)
+            rouge_result_without_stemming = evaluate.load("rouge", cache_dir="./cache").compute(predictions=self.pred,
+                                                                                                references=self.ref,
+                                                                                                use_stemmer=False)
         elif self.cfg.rouge_scorer == "multilingual":
             rouge_result_with_stemming = self.calculate_multilingual_rouge_scores(use_stemmer=True)
             rouge_result_without_stemming = self.calculate_multilingual_rouge_scores(use_stemmer=False)
