@@ -2,7 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
+import shutil
 from dataclasses import dataclass, field
 
 import evaluate
@@ -56,12 +56,15 @@ class RougeBertScoreScorer(BaseScorer):
         rouge_result_with_stemming = dict()
         rouge_result_without_stemming = dict()
         if self.cfg.rouge_scorer == "huggingface":
+            shutil.rmtree("./cache")
             rouge_result_with_stemming = evaluate.load("rouge", cache_dir="./cache").compute(predictions=self.pred,
                                                                                              references=self.ref,
                                                                                              use_stemmer=True)
+            shutil.rmtree("./cache")
             rouge_result_without_stemming = evaluate.load("rouge", cache_dir="./cache").compute(predictions=self.pred,
                                                                                                 references=self.ref,
                                                                                                 use_stemmer=False)
+            shutil.rmtree("./cache")
         elif self.cfg.rouge_scorer == "multilingual":
             rouge_result_with_stemming = self.calculate_multilingual_rouge_scores(use_stemmer=True)
             rouge_result_without_stemming = self.calculate_multilingual_rouge_scores(use_stemmer=False)
@@ -86,9 +89,11 @@ class RougeBertScoreScorer(BaseScorer):
         return {"{}_prob".format(language): np.mean([result[language] for result in results]) for language in languages}
 
     def calculate_bert_score(self):
-        bert_result = evaluate.load("bertscore").compute(predictions=self.pred,
-                                                         references=self.ref,
-                                                         model_type="bert-base-multilingual-cased")
+        shutil.rmtree("./cache")
+        bert_result = evaluate.load("bertscore", cache_dir="./cache").compute(predictions=self.pred,
+                                                                              references=self.ref,
+                                                                              model_type="bert-base-multilingual-cased")
+        shutil.rmtree("./cache")
         if bert_result["hashcode"]:
             del bert_result["hashcode"]
         return {"bert_score_{}".format(k): np.mean(v) for k, v in bert_result.items()}
