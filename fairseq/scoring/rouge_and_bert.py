@@ -56,7 +56,6 @@ class RougeBertScoreScorer(BaseScorer):
         rouge_result_with_stemming = dict()
         rouge_result_without_stemming = dict()
         if self.cfg.rouge_scorer == "huggingface":
-            shutil.rmtree("./cache")
             rouge_result_with_stemming = evaluate.load("rouge", cache_dir="./cache").compute(predictions=self.pred,
                                                                                              references=self.ref,
                                                                                              use_stemmer=True)
@@ -89,7 +88,6 @@ class RougeBertScoreScorer(BaseScorer):
         return {"{}_prob".format(language): np.mean([result[language] for result in results]) for language in languages}
 
     def calculate_bert_score(self):
-        shutil.rmtree("./cache")
         bert_result = evaluate.load("bertscore", cache_dir="./cache").compute(predictions=self.pred,
                                                                               references=self.ref,
                                                                               model_type="bert-base-multilingual-cased")
