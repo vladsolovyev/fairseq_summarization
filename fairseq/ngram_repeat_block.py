@@ -98,23 +98,21 @@ class NGramRepeatBlock(nn.Module):
         banned_tokens = [
             torch.jit.annotate(List[int], []) for bbsz_idx in range(bsz * beam_size)
         ]
-        if step + 2 - self.no_repeat_ngram_size >= 0:
+        if step - self.no_repeat_ngram_size >= 0:
             cpu_tokens: List[List[int]] = tokens.cpu().tolist()
-            check_start_pos = step + 2 - self.no_repeat_ngram_size
+            check_start_pos = step + 1 - self.no_repeat_ngram_size
             for bbsz_idx in range(bsz * beam_size):
-                ngram_to_check = cpu_tokens[bbsz_idx][
-                    -(self.no_repeat_ngram_size - 1) :
-                ]
+                ngram_to_check = cpu_tokens[bbsz_idx][check_start_pos:step+1]
                 for i in range(check_start_pos):
                     if (
                         ngram_to_check
-                        == cpu_tokens[bbsz_idx][i : i + self.no_repeat_ngram_size - 1]
+                        == cpu_tokens[bbsz_idx][i:i + self.no_repeat_ngram_size]
                     ):
                         banned_tokens[bbsz_idx].append(
-                            cpu_tokens[bbsz_idx][i + self.no_repeat_ngram_size - 1]
+                            cpu_tokens[bbsz_idx][step]
                         )
-        for bbsz_idx in range(bsz * beam_size):
-            lprobs[bbsz_idx][
-                torch.tensor(banned_tokens[bbsz_idx], dtype=torch.int64)
-            ] = torch.tensor(-math.inf).to(lprobs)
+            for bbsz_idx in range(bsz * beam_size):
+                lprobs[bbsz_idx][
+                    torch.tensor(banned_tokens[bbsz_idx], dtype=torch.int64)
+                ] = torch.tensor(-math.inf).to(lprobs)
         return lprobs
