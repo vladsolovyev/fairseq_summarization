@@ -17,6 +17,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
 
         self.language_classifier_steps = args.language_classifier_steps
         self.language_classifier_one_vs_rest = args.language_classifier_one_vs_rest
+        self.use_kldivloss = args.use_kldivloss
 
     def classification_step(self, sample, model, criterion, optimizer, update_num, ignore_grad=False):
         # Improve classifier to distinguish source languages
@@ -30,7 +31,8 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
                           sample,
                           classification_step=True,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
-                          print_predictions=(update_num % 500 == 0))
+                          print_predictions=(update_num % 500 == 0),
+                          use_kldivloss=self.use_kldivloss)
         if ignore_grad:
             loss *= 0
         with torch.autograd.profiler.record_function("backward"):
@@ -48,7 +50,8 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
                           sample,
                           classification_step=False,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
-                          print_predictions=(update_num % 500 == 0))
+                          print_predictions=(update_num % 500 == 0),
+                          use_kldivloss=self.use_kldivloss)
         if ignore_grad:
             loss *= 0
         with torch.autograd.profiler.record_function("backward"):
@@ -73,5 +76,6 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
                 criterion(model,
                           sample,
                           classification_step=False,
-                          language_classifier_one_vs_rest=self.language_classifier_one_vs_rest)
+                          language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
+                          use_kldivloss=self.use_kldivloss)
         return loss, sample_size, logging_output

@@ -52,6 +52,11 @@ class LanguageClassificationTransformerModel(BARTResidualDropModel):
             help="If non-zero, language classification will be binary (this class vs rest)",
         )
 
+        parser.add_argument(
+            "--use-kldivloss",
+            action="store_true", help="Use kldivloss for adversarial loss", default=False
+        )
+
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
         return LanguageClassificationTransformerEncoder(args, src_dict, embed_tokens)

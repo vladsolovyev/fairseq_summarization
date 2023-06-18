@@ -37,7 +37,8 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
         )
 
     def forward(self, model, sample, reduce=True, classification_step=False,
-                language_classifier_one_vs_rest=-1, print_predictions=False):
+                language_classifier_one_vs_rest=-1, print_predictions=False,
+                use_kldivloss=False):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -72,7 +73,8 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                                          net_output,
                                                          classification_step=True,
                                                          language_classifier_one_vs_rest=language_classifier_one_vs_rest,
-                                                         print_predictions=print_predictions)
+                                                         print_predictions=print_predictions,
+                                                         use_kldivloss=use_kldivloss)
             logging_output = {"loss": loss.data, "nll_loss": nll_loss.data, "ntokens": sample["ntokens"],
                               "nsentences": sample["target"].size(0), "sample_size": sample_size,
                               "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
@@ -113,7 +115,8 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                                             reduce=True,
                                             classification_step=True,
                                             language_classifier_one_vs_rest=-1,
-                                            print_predictions=False):
+                                            print_predictions=False,
+                                            use_kldivloss=False):
         encoder_classification_out = net_output[1]["classification_out"]
         max_len, batch_size, _ = encoder_classification_out.shape
         lprobs = F.log_softmax(encoder_classification_out.float(), dim=-1)
@@ -135,10 +138,16 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             loss, nll_loss = label_smoothed_nll_loss(lprobs, target, self.eps, reduce=reduce)
         else:
             num_classes = len(lang_dict) if language_classifier_one_vs_rest == -1 else 2
-            equal_probabilities = tensor(1 / num_classes).repeat(num_classes)
-            equal_probabilities = F.log_softmax(equal_probabilities, -1)
-            target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)
-            loss = KLDivLoss(reduction="sum", log_target=True)(lprobs, target_equal_probabilities)
+            if use_kldivloss:
+                equal_probabilities = tensor(1 / num_classes).repeat(num_classes)
+                equal_probabilities = F.log_softmax(equal_probabilities, -1)
+                target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)
+                loss = KLDivLoss(reduction="sum", log_target=True)(lprobs, target_equal_probabilities)
+            else:
+                if target.dim() == lprobs.dim() - 1:
+                    target = target.unsqueeze(-1)
+                loss = -torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
+                loss = loss.sum()
             nll_loss = loss
 
         stats_per_lang = {}
