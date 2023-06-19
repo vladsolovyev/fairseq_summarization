@@ -9,6 +9,7 @@ from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import Tensor
 
 from fairseq import search, utils
@@ -290,6 +291,8 @@ class SequenceGenerator(nn.Module):
         if use_language_embeddings_encoder_output:
             encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + \
                                                 decoder.language_embeddings_encoder_output(decoder.lang_dict[bos_token])
+            fc_language_embeddings = decoder.fc_language_embeddings[decoder.lang_dict[bos_token]]
+            encoder_outs[0]["encoder_out"][0] = F.relu(fc_language_embeddings(encoder_outs[0]["encoder_out"][0]))
 
         # initialize buffers
         scores = (

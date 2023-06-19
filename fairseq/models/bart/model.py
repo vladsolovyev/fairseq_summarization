@@ -11,12 +11,12 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from fairseq import utils
 from fairseq.models import register_model, register_model_architecture
 from fairseq.models.transformer import TransformerModel
 from fairseq.modules.transformer_sentence_encoder import init_bert_params
-
 from .hub_interface import BARTHubInterface
 
 logger = logging.getLogger(__name__)
@@ -71,18 +71,18 @@ class BARTModel(TransformerModel):
         return {"self"}
 
     def forward(
-        self,
-        src_tokens,
-        src_lengths,
-        prev_output_tokens,
-        features_only: bool = False,
-        classification_head_name: Optional[str] = None,
-        token_embeddings: Optional[torch.Tensor] = None,
-        return_all_hiddens: bool = True,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
-        src_lang_id=None,
-        tgt_lang_id=None
+            self,
+            src_tokens,
+            src_lengths,
+            prev_output_tokens,
+            features_only: bool = False,
+            classification_head_name: Optional[str] = None,
+            token_embeddings: Optional[torch.Tensor] = None,
+            return_all_hiddens: bool = True,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
+            src_lang_id=None,
+            tgt_lang_id=None
     ):
         if classification_head_name is not None:
             features_only = True
@@ -98,6 +98,13 @@ class BARTModel(TransformerModel):
                 torch.stack([self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[lang_id.item()])
                              for lang_id in tgt_lang_id], dim=0)
             encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0] + language_embeddings
+            for index, lang_id in enumerate(tgt_lang_id):
+                encoder_out["encoder_out"][0][:, index, :] =\
+                    self.decoder.dropout(encoder_out["encoder_out"][0][:, index, :])
+                fc_language_embeddings =\
+                    self.decoder.fc_language_embeddings[self.decoder.lang_dict[lang_id.item()]]
+                encoder_out["encoder_out"][0][:, index, :] = \
+                    F.relu(fc_language_embeddings(encoder_out["encoder_out"][0][:, index, :]))
 
         x, extra = self.decoder(
             prev_output_tokens,
@@ -122,13 +129,13 @@ class BARTModel(TransformerModel):
 
     @classmethod
     def from_pretrained(
-        cls,
-        model_name_or_path,
-        checkpoint_file="model.pt",
-        data_name_or_path=".",
-        bpe="gpt2",
-        sample_break_mode="eos",
-        **kwargs,
+            cls,
+            model_name_or_path,
+            checkpoint_file="model.pt",
+            data_name_or_path=".",
+            bpe="gpt2",
+            sample_break_mode="eos",
+            **kwargs,
     ):
         from fairseq import hub_utils
 
@@ -145,7 +152,7 @@ class BARTModel(TransformerModel):
         return BARTHubInterface(x["args"], x["task"], x["models"][0])
 
     def register_classification_head(
-        self, name, num_classes=None, inner_dim=None, **kwargs
+            self, name, num_classes=None, inner_dim=None, **kwargs
     ):
         """Register a classification head."""
         logger.info("Registering classification head: {0}".format(name))
@@ -186,13 +193,13 @@ class BARTModel(TransformerModel):
             if not k.startswith(prefix + "classification_heads."):
                 continue
 
-            head_name = k[len(prefix + "classification_heads.") :].split(".")[0]
+            head_name = k[len(prefix + "classification_heads."):].split(".")[0]
             num_classes = state_dict[
                 prefix + "classification_heads." + head_name + ".out_proj.weight"
-            ].size(0)
+                ].size(0)
             inner_dim = state_dict[
                 prefix + "classification_heads." + head_name + ".dense.weight"
-            ].size(0)
+                ].size(0)
 
             if getattr(self.args, "load_checkpoint_heads", False):
                 if head_name not in current_head_names:
@@ -205,10 +212,10 @@ class BARTModel(TransformerModel):
                     )
                     keys_to_delete.append(k)
                 elif (
-                    num_classes
-                    != self.classification_heads[head_name].out_proj.out_features
-                    or inner_dim
-                    != self.classification_heads[head_name].dense.out_features
+                        num_classes
+                        != self.classification_heads[head_name].out_proj.out_features
+                        or inner_dim
+                        != self.classification_heads[head_name].dense.out_features
                 ):
                     logger.warning(
                         "deleting classification head ({}) from checkpoint "
@@ -228,8 +235,8 @@ class BARTModel(TransformerModel):
         # embedding matrix that corresponds to mask_idx token.
         loaded_dict_size = state_dict["encoder.embed_tokens.weight"].size(0)
         if (
-            loaded_dict_size == len(self.encoder.dictionary) + 1
-            and "<mask>" not in self.encoder.dictionary
+                loaded_dict_size == len(self.encoder.dictionary) + 1
+                and "<mask>" not in self.encoder.dictionary
         ):
             truncate_emb("encoder.embed_tokens.weight")
             truncate_emb("decoder.embed_tokens.weight")
@@ -240,21 +247,21 @@ class BARTModel(TransformerModel):
         # add extra lang embeddings at the end of embed_tokens.
         # Note: newly added languages are assumed to have been added at the end.
         if self.args.task == "multilingual_denoising" and loaded_dict_size < len(
-            self.encoder.dictionary
+                self.encoder.dictionary
         ):
             logger.info(
                 "Adding extra language embeddings not found in pretrained model for "
                 "continued pretraining of MBART on new set of languages."
             )
             loaded_mask_token_embedding = state_dict["encoder.embed_tokens.weight"][
-                -1, :
-            ]
+                                          -1, :
+                                          ]
 
             num_langids_to_add = len(self.encoder.dictionary) - loaded_dict_size
             embed_dim = state_dict["encoder.embed_tokens.weight"].size(1)
 
             new_lang_embed_to_add = torch.zeros(num_langids_to_add, embed_dim)
-            nn.init.normal_(new_lang_embed_to_add, mean=0, std=embed_dim**-0.5)
+            nn.init.normal_(new_lang_embed_to_add, mean=0, std=embed_dim ** -0.5)
             new_lang_embed_to_add = new_lang_embed_to_add.to(
                 dtype=state_dict["encoder.embed_tokens.weight"].dtype,
             )
@@ -262,7 +269,7 @@ class BARTModel(TransformerModel):
             state_dict["encoder.embed_tokens.weight"] = torch.cat(
                 [
                     state_dict["encoder.embed_tokens.weight"][
-                        : loaded_dict_size - 1, :
+                    : loaded_dict_size - 1, :
                     ],
                     new_lang_embed_to_add,
                     loaded_mask_token_embedding.unsqueeze(0),
@@ -271,7 +278,7 @@ class BARTModel(TransformerModel):
             state_dict["decoder.embed_tokens.weight"] = torch.cat(
                 [
                     state_dict["decoder.embed_tokens.weight"][
-                        : loaded_dict_size - 1, :
+                    : loaded_dict_size - 1, :
                     ],
                     new_lang_embed_to_add,
                     loaded_mask_token_embedding.unsqueeze(0),
@@ -303,13 +310,13 @@ class BARTClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
     def __init__(
-        self,
-        input_dim,
-        inner_dim,
-        num_classes,
-        activation_fn,
-        pooler_dropout,
-        do_spectral_norm=False,
+            self,
+            input_dim,
+            inner_dim,
+            num_classes,
+            activation_fn,
+            pooler_dropout,
+            do_spectral_norm=False,
     ):
         super().__init__()
         self.dense = nn.Linear(input_dim, inner_dim)
