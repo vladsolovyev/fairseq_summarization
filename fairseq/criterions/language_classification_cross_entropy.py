@@ -22,6 +22,23 @@ else:
 lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
 
 
+def calcualte_encoder_output_loss(lprobs,
+                                  target,
+                                  language_classifier_one_vs_rest=-1,
+                                  use_kldivloss=False):
+    if use_kldivloss:
+        num_classes = len(lang_dict) if language_classifier_one_vs_rest == -1 else 2
+        equal_probabilities = tensor(1 / num_classes).repeat(num_classes)
+        equal_probabilities = F.log_softmax(equal_probabilities, -1)
+        target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)
+        return KLDivLoss(reduction="sum", log_target=True)(lprobs, target_equal_probabilities)
+    else:
+        if target.dim() == lprobs.dim() - 1:
+            target = target.unsqueeze(-1)
+        loss = -torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
+        return loss.sum()
+
+
 @register_criterion("language_classification_cross_entropy")
 class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCriterion):
     def __init__(
@@ -130,24 +147,15 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             src_one_lang_idx = target == language_classifier_one_vs_rest
             target[src_one_lang_idx] = 0
             target[~src_one_lang_idx] = 1
-        lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(-1)
+        lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(
+            -1)
         lprobs = lprobs[~src_pad_idx]
         target = target[~src_pad_idx]
 
         if classification_step:
             loss, nll_loss = label_smoothed_nll_loss(lprobs, target, self.eps, reduce=reduce)
         else:
-            num_classes = len(lang_dict) if language_classifier_one_vs_rest == -1 else 2
-            if use_kldivloss:
-                equal_probabilities = tensor(1 / num_classes).repeat(num_classes)
-                equal_probabilities = F.log_softmax(equal_probabilities, -1)
-                target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)
-                loss = KLDivLoss(reduction="sum", log_target=True)(lprobs, target_equal_probabilities)
-            else:
-                if target.dim() == lprobs.dim() - 1:
-                    target = target.unsqueeze(-1)
-                loss = -torch.log(1.0 - lprobs.gather(dim=-1, index=target).exp())
-                loss = loss.sum()
+            loss = calcualte_encoder_output_loss(lprobs, target, language_classifier_one_vs_rest, use_kldivloss)
             nll_loss = loss
 
         stats_per_lang = {}

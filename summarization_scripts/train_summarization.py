@@ -25,7 +25,8 @@ def train_summarization_model(data_dir,
                               max_epoch=None,
                               append_src_tok=True,
                               sampling_temperature="1.5",
-                              label_smoothing="0.0"):
+                              label_smoothing="0.0",
+                              use_kldivloss=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -88,8 +89,10 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
                          "--num-language-to-classify", "3",
-                         "--language-classifier-one-vs-rest", "-1",
-                         "--log-interval", "101"])
+                         "--language-classifier-one-vs-rest", "-1"])
+        if use_kldivloss:
+            sys.argv.append("--use-kldivloss")
+
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",
