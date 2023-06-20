@@ -1141,7 +1141,7 @@ class MultilingualDatasetManager(object):
                 # valid and test datasets will be degerate to concating datasets:
                 sampling_ratios=sample_ratios,
                 eval_key=None,
-                collate_format=CollateFormat.single,
+                collate_format=CollateFormat.ordered_dict,
                 virtual_size=self.args.virtual_data_size,
                 split=split,
                 # if not using lang_tok altering, simplified to use the same collater

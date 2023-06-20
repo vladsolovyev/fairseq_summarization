@@ -254,7 +254,7 @@ class SampledMultiDataset(FairseqDataset):
         """Merge a list of samples to form a mini-batch."""
         if len(samples) == 0:
             return None
-        if self.collate_format == "ordered_dict":
+        if self.collate_format == CollateFormat.ordered_dict:
             collect_samples = [[] for _ in range(len(self.datasets))]
             for (i, sample) in samples:
                 collect_samples[i].append(sample)

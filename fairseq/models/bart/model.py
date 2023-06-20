@@ -98,13 +98,9 @@ class BARTModel(TransformerModel):
                 torch.stack([self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[lang_id.item()])
                              for lang_id in tgt_lang_id], dim=0)
             encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0] + language_embeddings
-            for index, lang_id in enumerate(tgt_lang_id):
-                encoder_out["encoder_out"][0][:, index, :] =\
-                    self.decoder.dropout(encoder_out["encoder_out"][0][:, index, :])
-                fc_language_embeddings =\
-                    self.decoder.fc_language_embeddings[self.decoder.lang_dict[lang_id.item()]]
-                encoder_out["encoder_out"][0][:, index, :] = \
-                    F.relu(fc_language_embeddings(encoder_out["encoder_out"][0][:, index, :]))
+            encoder_out["encoder_out"][0] = self.decoder.dropout(encoder_out["encoder_out"][0])
+            fc_language_embeddings = self.decoder.fc_language_embeddings[self.decoder.lang_dict[tgt_lang_id[0].item()]]
+            encoder_out["encoder_out"][0] = F.relu(fc_language_embeddings(encoder_out["encoder_out"][0]))
 
         x, extra = self.decoder(
             prev_output_tokens,
