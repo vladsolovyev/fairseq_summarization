@@ -546,13 +546,9 @@ def validate(
         # create a new root metrics aggregator so validation metrics
         # don't pollute other aggregators (e.g., train meters)
         with metrics.aggregate(new_root=True) as agg:
-            for i, sample in enumerate(progress):
-                if (
-                    cfg.dataset.max_valid_steps is not None
-                    and i > cfg.dataset.max_valid_steps
-                ):
-                    break
-                trainer.valid_step(sample)
+            for samples_dict in progress:
+                for sample in samples_dict.values():
+                    trainer.valid_step(sample)
 
         # log validation stats
         # only tracking the best metric on the 1st validation subset
@@ -563,7 +559,6 @@ def validate(
             task.post_validate(trainer.get_model(), stats, agg)
 
         progress.print(stats, tag=subset, step=trainer.get_num_updates())
-
         valid_losses.append(stats[cfg.checkpoint.best_checkpoint_metric])
     return valid_losses
 

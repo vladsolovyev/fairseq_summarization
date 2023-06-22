@@ -1133,22 +1133,21 @@ class MultilingualDatasetManager(object):
         datasets, data_param_list = self.load_split_datasets(
             split, training, epoch, combine, shard_epoch=shard_epoch, **kwargs
         )
+        sample_ratios = None
         if training and split == getattr(self.args, "train_subset", None):
             sample_ratios = self.get_sampling_ratios(data_param_list, datasets, epoch)
-            return SampledMultiDataset(
-                OrderedDict(datasets),
-                epoch=epoch,
-                # valid and test datasets will be degerate to concating datasets:
-                sampling_ratios=sample_ratios,
-                eval_key=None,
-                collate_format=CollateFormat.ordered_dict,
-                virtual_size=self.args.virtual_data_size,
-                split=split,
-                # if not using lang_tok altering, simplified to use the same collater
-                shared_collater=False,
-            )
-        else:
-            return self.load_into_concat_dataset(split, datasets, data_param_list)
+        return SampledMultiDataset(
+            OrderedDict(datasets),
+            epoch=epoch,
+            # valid and test datasets will be degerate to concating datasets:
+            sampling_ratios=sample_ratios,
+            eval_key=None,
+            collate_format=CollateFormat.ordered_dict,
+            virtual_size=self.args.virtual_data_size,
+            split=split,
+            # if not using lang_tok altering, simplified to use the same collater
+            shared_collater=False,
+        )
 
     def load_dataset(
         self, split, training, epoch=0, combine=False, shard_epoch=None, **kwargs
