@@ -26,7 +26,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         model.set_num_updates(update_num)
 
         with torch.autograd.profiler.record_function("forward"):
-            loss, sample_size, logging_output = \
+            loss, classifier_loss, sample_size, logging_output = \
                 criterion(model,
                           sample,
                           classification_step=True,
@@ -45,7 +45,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         model.set_num_updates(update_num)
 
         with torch.autograd.profiler.record_function("forward"):
-            loss, sample_size, logging_output = \
+            loss, classifier_loss, sample_size, logging_output = \
                 criterion(model,
                           sample,
                           classification_step=False,
@@ -57,8 +57,6 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
         with torch.autograd.profiler.record_function("backward"):
             optimizer.backward(loss)
         return loss, sample_size, logging_output
-
-    #
 
     def train_step(
             self, sample, model, criterion, optimizer, update_num, ignore_grad=False
@@ -72,10 +70,11 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
     def valid_step(self, sample, model, criterion):
         model.eval()
         with torch.no_grad():
-            loss, sample_size, logging_output = \
+            loss, classifier_loss, sample_size, logging_output = \
                 criterion(model,
                           sample,
                           classification_step=False,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
                           use_kldivloss=self.use_kldivloss)
-        return loss, sample_size, logging_output
+            logging_output["loss"] = classifier_loss.data
+        return classifier_loss, sample_size, logging_output

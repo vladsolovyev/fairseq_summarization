@@ -107,7 +107,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                         logging_output["per_lang_n_correct"][lang] += stats_per_lang[lang][0]
                         logging_output["per_lang_total"][lang] += stats_per_lang[lang][1]
 
-            return classifier_loss, sample_size, logging_output
+            return classifier_loss, classifier_loss, sample_size, logging_output
 
         else:
             # Translation step, together with fooling classifier
@@ -124,7 +124,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
                               "nsentences": sample["target"].size(0), "sample_size": sample_size,
                               "classifier_loss": classifier_loss.data, "classifier_nll_loss": classifier_nll_loss.data}
 
-            return loss, sample_size, logging_output
+            return loss, classifier_loss, sample_size, logging_output
 
     def compute_encoder_classification_loss(self,
                                             net_input,
@@ -147,8 +147,7 @@ class LanguageClassificationCrossEntropyCriterion(LabelSmoothedCrossEntropyCrite
             src_one_lang_idx = target == language_classifier_one_vs_rest
             target[src_one_lang_idx] = 0
             target[~src_one_lang_idx] = 1
-        lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(
-            -1)
+        lprobs, target, src_pad_idx = lprobs.view(-1, lprobs.size(-1)), target.view(-1), src_pad_idx.contiguous().view(-1)
         lprobs = lprobs[~src_pad_idx]
         target = target[~src_pad_idx]
 
