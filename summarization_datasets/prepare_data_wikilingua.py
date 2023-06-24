@@ -16,6 +16,9 @@ datasets_monolingual = [load_dataset("GEM/wiki_lingua", "en", cache_dir="./cache
 datasets_crosslingual = [load_dataset("GEM/wiki_lingua", name="es_en", cache_dir="./cache"),
                          load_dataset("GEM/wiki_lingua", name="ru_en", cache_dir="./cache"),
                          load_dataset("GEM/wiki_lingua", name="tr_en", cache_dir="./cache")]
+dataset_es_ru = load_dataset("GEM/wiki_lingua", name="es_ru", cache_dir="./cache")
+dataset_en_tr = load_dataset("GEM/wiki_lingua", name="en_tr", cache_dir="./cache")
+dataset_tr_tr = load_dataset("GEM/wiki_lingua", name="tr", cache_dir="./cache")
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
@@ -34,7 +37,26 @@ def main():
             statistics["{}-{}-{}".format(language, language, data_type)] = \
                 encode_dataset_and_create_statistics(dataset_name, dataset[data_type], language, language, new_data_type, columns)
 
-    statistics_df = pd.DataFrame.from_dict(statistics, orient="index")
+    for data_type, new_data_type in zip(data_types, new_data_types):
+        filtered_dataset = dataset_es_ru[data_type]. \
+            filter(lambda sample: sample["target_language"] == "ru" and sample["source_language"] == "es")
+        statistics["es_XX-ru_RU-{}".format(data_type)] = \
+            encode_dataset_and_create_statistics(dataset_name, filtered_dataset, "es_XX", "ru_RU",
+                                                 new_data_type, columns, add_few_shot=True)
+
+    for data_type, new_data_type in zip(data_types, new_data_types):
+        filtered_dataset = dataset_en_tr[data_type]. \
+            filter(lambda sample: sample["target_language"] == "tr" and sample["source_language"] == "en")
+        statistics["en_XX-tr_TR-{}".format(data_type)] = \
+            encode_dataset_and_create_statistics(dataset_name, filtered_dataset, "en_XX", "tr_TR",
+                                                 new_data_type, columns, add_few_shot=True)
+
+    for data_type, new_data_type in zip(data_types, new_data_types):
+        statistics["tr_TR-tr_TR-{}".format(data_type)] = \
+            encode_dataset_and_create_statistics(dataset_name, dataset_tr_tr[data_type], "tr_TR", "tr_TR",
+                                                 new_data_type, columns, add_few_shot=True)
+
+    statistics_df = pd.DataFrame.from_dict(statistics, orient="index").sort_index()
     statistics_df.to_csv("stat_wikilingua.txt")
 
 
