@@ -343,7 +343,7 @@ class LanguagePairDataset(FairseqDataset):
     def __len__(self):
         return len(self.src)
 
-    def collater(self, samples, pad_to_length=None):
+    def collater(self, samples, pad_to_length=None, masked_labels_per_language=None):
         """Merge a list of samples to form a mini-batch.
 
         Args:
@@ -400,6 +400,8 @@ class LanguagePairDataset(FairseqDataset):
                 res["tgt_lang_id"] = (
                     torch.LongTensor([[self.tgt_lang_id]]).expand(bsz, 1).clone().to(src_tokens)
                 )
+                if masked_labels_per_language is not None and self.tgt_lang_id in masked_labels_per_language:
+                    res["masked_labels"] = masked_labels_per_language[self.tgt_lang_id]
         return res
 
     def num_tokens(self, index):

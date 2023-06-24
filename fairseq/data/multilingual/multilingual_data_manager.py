@@ -11,6 +11,8 @@ import os
 from collections import OrderedDict, defaultdict
 from argparse import ArgumentError
 
+import torch
+
 from fairseq import utils
 from fairseq.data import (
     AppendTokenDataset,
@@ -278,6 +280,12 @@ class MultilingualDatasetManager(object):
             help="virtual data size of the whole joint dataset to speed"
             "up data loading and have specific dynamic sampling strategy interval",
         )
+        parser.add_argument(
+            "--masked-labels",
+            action="store_true",
+            default=False,
+            help="Include masked labels for every language",
+        )
 
     @classmethod
     def load_langs(cls, args, **kwargs):
@@ -538,6 +546,8 @@ class MultilingualDatasetManager(object):
         src_datasets = []
         tgt_datasets = []
 
+        src_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
+        tgt_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else "")
 
@@ -558,6 +568,12 @@ class MultilingualDatasetManager(object):
                     )
 
             src_dataset = self.load_data(prefix + src, src_dict, dataset_impl)
+            tgt_dataset = self.load_data(prefix + tgt, tgt_dict, dataset_impl)
+            if split == "train" and self.args.masked_labels:
+                for sample in src_dataset:
+                    src_masked_lables[sample] = True
+                for sample in tgt_dataset:
+                    tgt_masked_lables[sample] = True
             if truncate_source:
                 tokens_to_remove = 2
                 if self.args.append_src_tok:
@@ -570,7 +586,7 @@ class MultilingualDatasetManager(object):
                     src_dict.eos(),
                 )
             src_datasets.append(src_dataset)
-            tgt_datasets.append(self.load_data(prefix + tgt, tgt_dict, dataset_impl))
+            tgt_datasets.append(tgt_dataset)
 
             logger.info(
                 "{} {} {}-{} {} examples".format(
@@ -606,7 +622,7 @@ class MultilingualDatasetManager(object):
                     align_path, None, dataset_impl
                 )
 
-        return src_dataset, tgt_dataset, align_dataset
+        return src_dataset, tgt_dataset, align_dataset, src_masked_lables, tgt_masked_lables
 
     def load_langpair_dataset(
         self,
@@ -654,7 +670,7 @@ class MultilingualDatasetManager(object):
         ):
             # source and target datasets can be reused in reversed directions to save memory
             # reversed directions of valid and test data will not share source and target datasets
-            src_dataset, tgt_dataset, align_dataset = self.load_lang_dataset(
+            src_dataset, tgt_dataset, align_dataset, src_masked_labels, tgt_masked_labels = self.load_lang_dataset(
                 data_path,
                 split,
                 src,
@@ -687,6 +703,8 @@ class MultilingualDatasetManager(object):
                         (data_path, split, norm_direction, tgt, src)
                     ] = align_dataset
         else:
+            src_masked_labels = None
+            tgt_masked_labels = None
             logger.info(
                 f"Reusing source and target datasets of [{split}] {tgt}-{src} for reversed direction: "
                 f"[{split}] {src}-{tgt}: src length={len(src_dataset)}; tgt length={len(tgt_dataset)}"
@@ -705,7 +723,8 @@ class MultilingualDatasetManager(object):
             src_lang_id=src_lang_id,
             tgt_lang_id=tgt_lang_id,
             eos=self.get_decoder_langtok(tgt, "tgt")
-        )
+        ), src_masked_labels, tgt_masked_labels
+
 
     def src_dataset_tranform_func(self, src_lang, tgt_lang, dataset, spec=None):
         if self.args.lang_tok_replacing_bos_eos:
@@ -808,7 +827,7 @@ class MultilingualDatasetManager(object):
             f"{data_category}:{src}-{tgt} src_langtok: {src_langtok}; tgt_langtok: {tgt_langtok}"
         )
 
-        langpair_ds = self.load_langpair_dataset(
+        langpair_ds, src_masked_labels, tgt_masked_labels = self.load_langpair_dataset(
             data_path,
             split,
             src,
@@ -854,7 +873,7 @@ class MultilingualDatasetManager(object):
             )
         else:
             ds = langpair_ds
-        return ds
+        return ds, (src_langtok, src_masked_labels), (tgt_langtok, tgt_masked_labels)
 
     def load_split_langpair_datasets(self, split, data_param_list):
         datasets = []
@@ -1076,18 +1095,23 @@ class MultilingualDatasetManager(object):
         langpairs_sharing_datasets = (
             {} if self.args.enable_reservsed_directions_shared_datasets else None
         )
-        datasets = [
-            (
-                param["key"],
-                self.load_a_dataset(
+        masked_labels_per_language = dict()
+        datasets = list()
+        for param in data_param_list:
+            dataset, src_masked_lables, tgt_masked_lables = self.load_a_dataset(
                     combine=combine,
                     langpairs_sharing_datasets=langpairs_sharing_datasets,
                     **param,
-                ),
-            )
-            for param in data_param_list
-        ]
-        return datasets, data_param_list
+                )
+            datasets.append((param["key"], dataset))
+            for masked_label in [src_masked_lables, tgt_masked_lables]:
+                if masked_label is not None:
+                    if masked_label[0] not in masked_labels_per_language:
+                        masked_labels_per_language[masked_label[0]] = masked_label[1]
+                    else:
+                        masked_labels_per_language[masked_label[0]] =\
+                            torch.logical_or(masked_labels_per_language[masked_label[0]], masked_label[1])
+        return datasets, data_param_list, masked_labels_per_language
 
     def load_into_concat_dataset(self, split, datasets, data_param_list):
         if self.args.lang_tok_replacing_bos_eos:
@@ -1105,32 +1129,31 @@ class MultilingualDatasetManager(object):
     def load_sampled_multi_epoch_dataset(
         self, split, training, epoch=0, combine=False, shard_epoch=None, **kwargs
     ):
-        datasets, data_param_list = self.load_split_datasets(
+        datasets, data_param_list, masked_labels_per_language = self.load_split_datasets(
             split, training, epoch, combine, shard_epoch=shard_epoch, **kwargs
         )
+        sample_ratios = None
         if training and split == getattr(self.args, "train_subset", None):
             sample_ratios = self.get_sampling_ratios(data_param_list, datasets, epoch)
-            return SampledMultiEpochDataset(
-                OrderedDict(datasets),
-                epoch=epoch,
-                shard_epoch=shard_epoch,
-                # valid and test datasets will be degenerate to concating datasets:
-                sampling_ratios=sample_ratios,
-                eval_key=None,
-                collate_format=CollateFormat.single,
-                virtual_size=self.args.virtual_data_size,
-                split=split,
-                virtual_epoch_size=self.args.virtual_epoch_size,
-                # if not using lang_tok altering, simplified to use the same collater
-                shared_collater=self._shared_collater(),
-            )
-        else:
-            return self.load_into_concat_dataset(split, datasets, data_param_list)
+        return SampledMultiEpochDataset(
+            OrderedDict(datasets),
+            epoch=epoch,
+            shard_epoch=shard_epoch,
+            # valid and test datasets will be degenerate to concating datasets:
+            sampling_ratios=sample_ratios,
+            eval_key=None,
+            collate_format=CollateFormat.single,
+            virtual_size=self.args.virtual_data_size,
+            split=split,
+            virtual_epoch_size=self.args.virtual_epoch_size,
+            # if not using lang_tok altering, simplified to use the same collater
+            shared_collater=self._shared_collater(),
+        )
 
     def load_sampled_multi_dataset(
         self, split, training, epoch=0, combine=False, shard_epoch=None, **kwargs
     ):
-        datasets, data_param_list = self.load_split_datasets(
+        datasets, data_param_list, masked_labels_per_language = self.load_split_datasets(
             split, training, epoch, combine, shard_epoch=shard_epoch, **kwargs
         )
         sample_ratios = None
@@ -1147,6 +1170,7 @@ class MultilingualDatasetManager(object):
             split=split,
             # if not using lang_tok altering, simplified to use the same collater
             shared_collater=False,
+            masked_labels_per_language=masked_labels_per_language if self.args.masked_labels else None
         )
 
     def load_dataset(

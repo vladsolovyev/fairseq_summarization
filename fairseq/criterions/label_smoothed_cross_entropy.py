@@ -30,11 +30,16 @@ class LabelSmoothedCrossEntropyCriterionConfig(FairseqDataclass):
     sentence_avg: bool = II("optimization.sentence_avg")
 
 
-def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=True):
+def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=True, masked_labels=None):
     if target.dim() == lprobs.dim() - 1:
         target = target.unsqueeze(-1)
     nll_loss = -lprobs.gather(dim=-1, index=target)
-    smooth_loss = -lprobs.sum(dim=-1, keepdim=True)
+    if masked_labels is not None:
+        smooth_loss = lprobs[:, masked_labels]
+    else:
+        smooth_loss = lprobs
+    eps_i = epsilon / (smooth_loss.size(-1) - 1)
+    smooth_loss = -smooth_loss.sum(dim=-1, keepdim=True)
     if ignore_index is not None:
         pad_mask = target.eq(ignore_index)
         nll_loss.masked_fill_(pad_mask, 0.0)
@@ -45,7 +50,6 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
     if reduce:
         nll_loss = nll_loss.sum()
         smooth_loss = smooth_loss.sum()
-    eps_i = epsilon / (lprobs.size(-1) - 1)
     loss = (1.0 - epsilon - eps_i) * nll_loss + eps_i * smooth_loss
     return loss, nll_loss
 
@@ -111,6 +115,7 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
             self.eps,
             ignore_index=self.padding_idx,
             reduce=reduce,
+            masked_labels=sample["masked_labels"] if "masked_labels" in sample else None
         )
         return loss, nll_loss
 

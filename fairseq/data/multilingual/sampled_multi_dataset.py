@@ -84,6 +84,7 @@ class SampledMultiDataset(FairseqDataset):
         split="",
         shared_collater=False,
         shuffle=True,
+        masked_labels_per_language=None
     ):
         super().__init__()
         self.shared_collater = shared_collater
@@ -120,6 +121,7 @@ class SampledMultiDataset(FairseqDataset):
         self._reset_cached_properties()
         self.setup_sampling(sampling_ratios, virtual_size)
         self.set_epoch(epoch)
+        self.masked_labels_per_language = masked_labels_per_language
 
     def _clean_if_not_none(self, var_list):
         for v in var_list:
@@ -260,7 +262,8 @@ class SampledMultiDataset(FairseqDataset):
                 collect_samples[i].append(sample)
             batch = OrderedDict(
                 [
-                    (self.keys[i], dataset.collater(collect_samples[i]))
+                    (self.keys[i], dataset.collater(collect_samples[i],
+                                                    masked_labels_per_language=self.masked_labels_per_language))
                     for i, (key, dataset) in enumerate(zip(self.keys, self.datasets))
                     if len(collect_samples[i]) > 0
                 ]
