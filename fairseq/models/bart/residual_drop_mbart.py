@@ -57,15 +57,15 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
                                250009: tensor(2).to(device), 250021: tensor(3).to(device)})
         self.encoder_language_adapter = nn.Embedding(4, args.encoder_embed_dim)
         self.fc_language_adapter_1 = nn.ModuleList(
-            [nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2),
-             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2),
-             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2),
-             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2)])
+            [nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim // 2),
+             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim // 2),
+             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim // 2),
+             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim // 2)])
         self.fc_language_adapter_2 = nn.ModuleList(
-            [nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim),
-             nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim),
-             nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim),
-             nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim)])
+            [nn.Linear(args.encoder_embed_dim // 2, args.encoder_embed_dim),
+             nn.Linear(args.encoder_embed_dim // 2, args.encoder_embed_dim),
+             nn.Linear(args.encoder_embed_dim // 2, args.encoder_embed_dim),
+             nn.Linear(args.encoder_embed_dim // 2, args.encoder_embed_dim)])
         self.dropout = FairseqDropout(args.dropout, module_name=self.__class__.__name__)
         self.layer_norm = LayerNorm(args.encoder_embed_dim)
 
