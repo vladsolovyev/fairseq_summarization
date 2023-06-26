@@ -4,7 +4,7 @@ from torch import nn, tensor
 from fairseq.models import register_model_architecture, register_model
 from fairseq.models.bart import mbart_large_architecture, BARTModel
 from fairseq.models.transformer import TransformerEncoder, TransformerDecoder
-from fairseq.modules import FairseqDropout
+from fairseq.modules import FairseqDropout, LayerNorm
 from fairseq.modules.residual_drop_transformer_layer import ResidualDropTransformerEncoderLayer
 
 if torch.cuda.is_available():
@@ -55,14 +55,19 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
         super().__init__(args, dictionary, embed_tokens)
         self.lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device),
                                250009: tensor(2).to(device), 250021: tensor(3).to(device)})
-        self.language_embeddings = nn.Embedding(4, args.encoder_embed_dim)
-        self.language_embeddings_encoder_output = nn.Embedding(4, args.encoder_embed_dim)
-        self.fc_language_embeddings = nn.ModuleList(
-            [nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim),
-             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim),
-             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim),
-             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim)])
+        self.encoder_language_adapter = nn.Embedding(4, args.encoder_embed_dim)
+        self.fc_language_adapter_1 = nn.ModuleList(
+            [nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2),
+             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2),
+             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2),
+             nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim/2)])
+        self.fc_language_adapter_2 = nn.ModuleList(
+            [nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim),
+             nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim),
+             nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim),
+             nn.Linear(args.encoder_embed_dim/2, args.encoder_embed_dim)])
         self.dropout = FairseqDropout(args.dropout, module_name=self.__class__.__name__)
+        self.layer_norm = LayerNorm(args.encoder_embed_dim)
 
 
 @register_model_architecture("bart_residual_drop", "mbart_large_residual_drop")

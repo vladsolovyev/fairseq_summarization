@@ -93,14 +93,14 @@ class BARTModel(TransformerModel):
             token_embeddings=token_embeddings,
             return_all_hiddens=return_all_hiddens,
         )
-        if self.cfg.use_language_embeddings_encoder_output:
-            language_embeddings = \
-                torch.stack([self.decoder.language_embeddings_encoder_output(self.decoder.lang_dict[lang_id.item()])
-                             for lang_id in tgt_lang_id], dim=0)
-            encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0] + language_embeddings
-            encoder_out["encoder_out"][0] = self.decoder.dropout(encoder_out["encoder_out"][0])
-            fc_language_embeddings = self.decoder.fc_language_embeddings[self.decoder.lang_dict[tgt_lang_id[0].item()]]
-            encoder_out["encoder_out"][0] = F.relu(fc_language_embeddings(encoder_out["encoder_out"][0]))
+        if self.cfg.use_language_adapter:
+            x = self.decoder.layer_norm(encoder_out["encoder_out"][0])
+            fc_language_adapter_1 = self.decoder.fc_language_adapter_1[self.decoder.lang_dict[tgt_lang_id[0].item()]]
+            x = F.relu(fc_language_adapter_1(x))
+            x = self.decoder.dropout(x)
+            fc_language_adapter_2 = self.decoder.fc_language_adapter_2[self.decoder.lang_dict[tgt_lang_id[0].item()]]
+            x = fc_language_adapter_2(x)
+            encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0] + x
 
         x, extra = self.decoder(
             prev_output_tokens,

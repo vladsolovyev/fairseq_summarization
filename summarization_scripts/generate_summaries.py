@@ -15,8 +15,7 @@ def generate_and_evaluate_summaries(directory,
                                     min_len="0",
                                     translate_to_lang="",
                                     rouge_scorer="huggingface",
-                                    use_language_embeddings=False,
-                                    use_language_embeddings_encoder_output=False,
+                                    use_language_adapter=False,
                                     append_src_tok=True):
     sys.argv.extend(
         [directory,
@@ -49,10 +48,8 @@ def generate_and_evaluate_summaries(directory,
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")
-    if use_language_embeddings:
-        sys.argv.append("--use-language-embeddings")
-    if use_language_embeddings_encoder_output:
-        sys.argv.append("--use-language-embeddings-encoder-output")
+    if use_language_adapter:
+        sys.argv.append("--use-language-adapter")
     if append_src_tok:
         sys.argv.append("--append-src-tok")
     results = generate.cli_main().scores

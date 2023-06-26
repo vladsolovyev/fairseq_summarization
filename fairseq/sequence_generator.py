@@ -210,7 +210,7 @@ class SequenceGenerator(nn.Module):
         prefix_tokens: Optional[Tensor] = None,
         constraints: Optional[Tensor] = None,
         bos_token: Optional[int] = None,
-        use_language_embeddings_encoder_output=False
+        use_language_adapter=False
     ):
         incremental_states = torch.jit.annotate(
             List[Dict[str, Dict[str, Optional[Tensor]]]],
@@ -288,11 +288,14 @@ class SequenceGenerator(nn.Module):
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
         decoder = self.model.single_model.decoder
-        if use_language_embeddings_encoder_output:
-            encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + \
-                                                decoder.language_embeddings_encoder_output(decoder.lang_dict[bos_token])
-            fc_language_embeddings = decoder.fc_language_embeddings[decoder.lang_dict[bos_token]]
-            encoder_outs[0]["encoder_out"][0] = F.relu(fc_language_embeddings(encoder_outs[0]["encoder_out"][0]))
+        if use_language_adapter:
+            x = self.decoder.layer_norm(encoder_outs[0]["encoder_out"][0])
+            fc_language_adapter_1 = decoder.fc_language_adapter_1[decoder.lang_dict[bos_token]]
+            x = F.relu(fc_language_adapter_1(x))
+            x = self.decoder.dropout(x)
+            fc_language_adapter_2 = decoder.fc_language_adapter_2[decoder.lang_dict[bos_token]]
+            x = fc_language_adapter_2(x)
+            encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + x
 
         # initialize buffers
         scores = (
