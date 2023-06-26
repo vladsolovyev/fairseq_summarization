@@ -75,10 +75,8 @@ def train_summarization_model(data_dir,
     )
     if freeze_decoder_layers:
         sys.argv.append("--freeze-decoder-layers")
-    if use_language_embeddings:
-        sys.argv.append("--use-language-embeddings")
-    if use_language_embeddings_encoder_output:
-        sys.argv.append("--use-language-embeddings-encoder-output")
+    if use_language_adapter:
+        sys.argv.append("--use-language-adapter")
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():
@@ -97,7 +95,7 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch",
                          "--criterion", "label_smoothed_cross_entropy"])
     if validate:
-        sys.argv.extend(["--validate-interval-updates", "5000",
+        sys.argv.extend(["--validate-interval-updates", "3000",
                          "--patience", "1",
                          "--no-last-checkpoints"])
     else:

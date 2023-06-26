@@ -38,7 +38,7 @@ def calculate_wikilingua_baseline(output_dir=""):
 def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder="", prefix="", freeze_encoder_layers="0"):
     for use_language_adapter in [False, True]:
         prefix_lang_emb = \
-            "{}/{}".format(prefix, "with_lang_emb" if use_language_adapter else "no_lang_emb")
+            "{}/{}".format(prefix, "with_lang_adapter" if use_language_adapter else "no_lang_adapter")
         run_experiments(encoder_drop_residual=encoder_drop_residual,
                         experiments_folder=experiments_folder,
                         prefix=prefix_lang_emb,
