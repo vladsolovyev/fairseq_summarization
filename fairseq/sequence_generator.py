@@ -289,10 +289,10 @@ class SequenceGenerator(nn.Module):
         assert encoder_outs is not None
         decoder = self.model.single_model.decoder
         if use_language_adapter:
-            x = self.decoder.layer_norm(encoder_outs[0]["encoder_out"][0])
+            x = decoder.layer_norm(encoder_outs[0]["encoder_out"][0])
             fc_language_adapter_1 = decoder.fc_language_adapter_1[decoder.lang_dict[bos_token]]
             x = F.relu(fc_language_adapter_1(x))
-            x = self.decoder.dropout(x)
+            x = decoder.dropout(x)
             fc_language_adapter_2 = decoder.fc_language_adapter_2[decoder.lang_dict[bos_token]]
             x = fc_language_adapter_2(x)
             encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + x
