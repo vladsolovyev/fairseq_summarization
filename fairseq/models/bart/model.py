@@ -99,8 +99,7 @@ class BARTModel(TransformerModel):
             x = F.relu(fc_language_adapter_1(x))
             x = self.decoder.dropout(x)
             fc_language_adapter_2 = self.decoder.fc_language_adapter_2[self.decoder.lang_dict[tgt_lang_id[0].item()]]
-            x = fc_language_adapter_2(x)
-            encoder_out["encoder_out"][0] = encoder_out["encoder_out"][0] + x
+            encoder_out["encoder_out"][0] = fc_language_adapter_2(x)
 
         x, extra = self.decoder(
             prev_output_tokens,

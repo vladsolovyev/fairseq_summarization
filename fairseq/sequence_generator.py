@@ -294,8 +294,7 @@ class SequenceGenerator(nn.Module):
             x = F.relu(fc_language_adapter_1(x))
             x = decoder.dropout(x)
             fc_language_adapter_2 = decoder.fc_language_adapter_2[decoder.lang_dict[bos_token]]
-            x = fc_language_adapter_2(x)
-            encoder_outs[0]["encoder_out"][0] = encoder_outs[0]["encoder_out"][0] + x
+            encoder_outs[0]["encoder_out"][0] = fc_language_adapter_2(x)
 
         # initialize buffers
         scores = (
