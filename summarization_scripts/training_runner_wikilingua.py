@@ -36,18 +36,18 @@ def calculate_wikilingua_baseline(output_dir=""):
 
 
 def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder="", prefix="", freeze_encoder_layers="0"):
-    for use_language_adapter in [False, True]:
+    for use_encoder_output_adapter in [False, True]:
         prefix_lang_emb = \
-            "{}/{}".format(prefix, "with_lang_adapter" if use_language_adapter else "no_lang_adapter")
+            "{}/{}".format(prefix, "with_lang_adapter" if use_encoder_output_adapter else "no_lang_adapter")
         run_experiments(encoder_drop_residual=encoder_drop_residual,
                         experiments_folder=experiments_folder,
                         prefix=prefix_lang_emb,
                         freeze_encoder_layers=freeze_encoder_layers,
-                        use_language_adapter=use_language_adapter)
+                        use_encoder_output_adapter=use_encoder_output_adapter)
 
 
 def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
-                    freeze_encoder_layers="0", use_language_adapter=False):
+                    freeze_encoder_layers="0", use_encoder_output_adapter=False):
     output_dir = "{}/{}".format(experiments_folder, prefix)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
@@ -61,7 +61,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                               save_dir=monolingual_checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
-                              use_language_adapter=use_language_adapter)
+                              use_encoder_output_adapter=use_encoder_output_adapter)
     free_memory()
     # evaluate crosslingual cases: from spanish, russian, turkish into english
     for language in languages[1:]:
@@ -73,7 +73,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                             checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len,
-                                            use_language_adapter=use_language_adapter)
+                                            use_encoder_output_adapter=use_encoder_output_adapter)
         save_metrics(metrics, output_dir)
         free_memory()
 
@@ -92,7 +92,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
-                                      use_language_adapter=use_language_adapter)
+                                      use_encoder_output_adapter=use_encoder_output_adapter)
             free_memory()
             metrics["{}_mono_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="wikilingua",
@@ -102,7 +102,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                                 checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                                 lenpen=lenpen,
                                                 min_len=min_len,
-                                                use_language_adapter=use_language_adapter)
+                                                use_encoder_output_adapter=use_encoder_output_adapter)
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
@@ -115,7 +115,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                   checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
-                                  use_language_adapter=use_language_adapter)
+                                  use_encoder_output_adapter=use_encoder_output_adapter)
         free_memory()
         metrics["{}_mono_All".format(language)] = \
             generate_and_evaluate_summaries(directory="wikilingua",
@@ -125,7 +125,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                             checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len,
-                                            use_language_adapter=use_language_adapter)
+                                            use_encoder_output_adapter=use_encoder_output_adapter)
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)
         free_memory()
@@ -142,7 +142,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                               use_adversarial_loss=True,
                               max_update="30000",
                               validate=False,
-                              use_language_adapter=use_language_adapter,
+                              use_encoder_output_adapter=use_encoder_output_adapter,
                               append_src_tok=False,
                               sampling_temperature="30",
                               use_kldivloss=False)
@@ -157,7 +157,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                             checkpoint="{}/checkpoint_last.pt".format(monolingual_adv_checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len,
-                                            use_language_adapter=use_language_adapter,
+                                            use_encoder_output_adapter=use_encoder_output_adapter,
                                             append_src_tok=False)
         save_metrics(metrics, output_dir)
         free_memory()
@@ -175,7 +175,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                               use_adversarial_loss=True,
                               max_update="30000",
                               validate=False,
-                              use_language_adapter=use_language_adapter,
+                              use_encoder_output_adapter=use_encoder_output_adapter,
                               append_src_tok=False,
                               sampling_temperature="30",
                               use_kldivloss=True)
@@ -190,7 +190,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                             checkpoint="{}/checkpoint_last.pt".format(monolingual_adv_checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len,
-                                            use_language_adapter=use_language_adapter,
+                                            use_encoder_output_adapter=use_encoder_output_adapter,
                                             append_src_tok=False)
         save_metrics(metrics, output_dir)
         free_memory()
@@ -210,7 +210,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
-                                      use_language_adapter=use_language_adapter,
+                                      use_encoder_output_adapter=use_encoder_output_adapter,
                                       append_src_tok=False)
             free_memory()
             metrics["{}_mono_adv_{}".format(language, data_size)] = \
@@ -221,7 +221,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                                 checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
                                                 lenpen=lenpen,
                                                 min_len=min_len,
-                                                use_language_adapter=use_language_adapter,
+                                                use_encoder_output_adapter=use_encoder_output_adapter,
                                                 append_src_tok=False)
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
@@ -235,7 +235,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                   checkpoint="{}/checkpoint_last.pt".format(monolingual_adv_checkpoint_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
-                                  use_language_adapter=use_language_adapter,
+                                  use_encoder_output_adapter=use_encoder_output_adapter,
                                   append_src_tok=False)
         free_memory()
         metrics["{}_mono_adv_all".format(language)] = \
@@ -246,7 +246,7 @@ def run_experiments(encoder_drop_residual=None, experiments_folder="", prefix=""
                                             checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             min_len=min_len,
-                                            use_language_adapter=use_language_adapter,
+                                            use_encoder_output_adapter=use_encoder_output_adapter,
                                             append_src_tok=False)
         shutil.rmtree(checkpoint_dir)
         save_metrics(metrics, output_dir)

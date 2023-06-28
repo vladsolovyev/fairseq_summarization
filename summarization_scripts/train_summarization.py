@@ -14,7 +14,6 @@ def train_summarization_model(data_dir,
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_decoder_layers=False,
-                              use_language_adapter=False,
                               encoder_drop_residual=None,
                               max_update="70000",
                               freeze_encoder_layers="0",
@@ -25,7 +24,9 @@ def train_summarization_model(data_dir,
                               append_src_tok=True,
                               sampling_temperature="1.5",
                               label_smoothing="0.0",
-                              use_kldivloss=True):
+                              use_kldivloss=True,
+                              use_encoder_output_adapter=True,
+                              use_decoder_adapter=True):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -75,8 +76,6 @@ def train_summarization_model(data_dir,
     )
     if freeze_decoder_layers:
         sys.argv.append("--freeze-decoder-layers")
-    if use_language_adapter:
-        sys.argv.append("--use-language-adapter")
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():
@@ -104,6 +103,10 @@ def train_summarization_model(data_dir,
         sys.argv.extend(["--max-epoch", max_epoch])
     if append_src_tok:
         sys.argv.append("--append-src-tok")
+    if use_encoder_output_adapter:
+        sys.argv.append("--use-encoder-output-adapter")
+    if use_decoder_adapter:
+        sys.argv.append("--use-decoder-adapter")
 
     train.cli_main()
     sys.argv = sys.argv[:1]

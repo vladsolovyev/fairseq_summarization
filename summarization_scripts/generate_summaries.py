@@ -15,8 +15,9 @@ def generate_and_evaluate_summaries(directory,
                                     min_len="0",
                                     translate_to_lang="",
                                     rouge_scorer="huggingface",
-                                    use_language_adapter=False,
-                                    append_src_tok=True):
+                                    append_src_tok=True,
+                                    use_encoder_output_adapter=True,
+                                    use_decoder_adapter=True):
     sys.argv.extend(
         [directory,
          "--path", checkpoint,
@@ -48,10 +49,13 @@ def generate_and_evaluate_summaries(directory,
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")
-    if use_language_adapter:
-        sys.argv.append("--use-language-adapter")
     if append_src_tok:
         sys.argv.append("--append-src-tok")
+    if use_encoder_output_adapter:
+        sys.argv.append("--use-encoder-output-adapter")
+    if use_decoder_adapter:
+        sys.argv.append("--use-decoder-adapter")
+
     results = generate.cli_main().scores
     print("Checkpoint: {}, languages: {}-{}, results: {}".format(
         checkpoint, source_language, target_language, results))

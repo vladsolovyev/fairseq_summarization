@@ -14,7 +14,6 @@ class ClassificationLayer(nn.Module):
         )
 
     def forward(self, x):
-        x = F.relu(self.fc_1(x), inplace=True)
+        x = F.relu(self.fc_1(x))
         x = self.dropout(x)
-        x = self.fc_2(x)
-        return x
+        return self.fc_2(x)

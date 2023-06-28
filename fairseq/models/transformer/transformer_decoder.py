@@ -194,6 +194,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
         alignment_heads: Optional[int] = None,
         src_lengths: Optional[Any] = None,
         return_all_hiddens: bool = False,
+        tgt_lang_id=None
     ):
         """
         Args:
@@ -213,7 +214,6 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
                 - the decoder's output of shape `(batch, tgt_len, vocab)`
                 - a dictionary with any model-specific outputs
         """
-
         x, extra = self.extract_features(
             prev_output_tokens,
             encoder_out=encoder_out,
@@ -221,6 +221,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
             full_context_alignment=full_context_alignment,
             alignment_layer=alignment_layer,
             alignment_heads=alignment_heads,
+            tgt_lang_id=tgt_lang_id
         )
 
         if not features_only:
@@ -235,6 +236,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
         full_context_alignment: bool = False,
         alignment_layer: Optional[int] = None,
         alignment_heads: Optional[int] = None,
+        tgt_lang_id=None
     ):
         return self.extract_features_scriptable(
             prev_output_tokens,
@@ -243,6 +245,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
             full_context_alignment,
             alignment_layer,
             alignment_heads,
+            tgt_lang_id=tgt_lang_id
         )
 
     """
@@ -259,6 +262,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
         full_context_alignment: bool = False,
         alignment_layer: Optional[int] = None,
         alignment_heads: Optional[int] = None,
+        tgt_lang_id=None
     ):
         """
         Similar to *forward* but only return features.
@@ -347,6 +351,7 @@ class TransformerDecoderBase(FairseqIncrementalDecoder):
                 self_attn_padding_mask=self_attn_padding_mask,
                 need_attn=bool((idx == alignment_layer)),
                 need_head_weights=bool((idx == alignment_layer)),
+                tgt_lang_id=tgt_lang_id
             )
             inner_states.append(x)
             if layer_attn is not None and idx == alignment_layer:

@@ -82,14 +82,14 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
         parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings", default=False)
         parser.add_argument("--freeze-decoder-layers", action="store_true", help="Freeze decoder layers", default=False)
-        parser.add_argument("--use-language-adapter", action="store_true", help="Use language adapter", default=False)
+        parser.add_argument("--use-encoder-output-adapter", action="store_true", help="Use language adapter to encoder output", default=False)
         parser.add_argument('--freeze-encoder-layers', default=0, help="how many encoder layers should be frozen")
         parser.add_argument('--translate-to-lang', default="", help='translate to language')
         parser.add_argument("--append-src-tok", action="store_true", help="Append lang_tok to source", default=False)
+        parser.add_argument("--use-decoder-adapter", action="store_true", help="use decoder adapter layers", default=False)
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)
-        # fmt: on
 
     def __init__(self, args, langs, dicts, training):
         super().__init__(args)
@@ -261,8 +261,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                     self.args.target_lang, tgt_langtok_spec
                 )
                 if tgt_langtok_spec
-                else self.target_dictionary.eos(),
-                use_language_adapter=self.args.use_language_adapter
+                else self.target_dictionary.eos()
             )
 
     def reduce_metrics(self, logging_outputs, criterion):

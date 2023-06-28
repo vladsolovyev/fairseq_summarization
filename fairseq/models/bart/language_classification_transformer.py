@@ -103,6 +103,7 @@ class LanguageClassificationTransformerDecoder(ResidualDropTransformerDecoder):
             full_context_alignment: bool = False,
             alignment_layer: Optional[int] = None,
             alignment_heads: Optional[int] = None,
+            tgt_lang_id=None
     ):
         x, extra = super().extract_features_scriptable(
             prev_output_tokens,
@@ -111,6 +112,7 @@ class LanguageClassificationTransformerDecoder(ResidualDropTransformerDecoder):
             full_context_alignment,
             alignment_layer,
             alignment_heads,
+            tgt_lang_id=tgt_lang_id
         )
         # Additionally return encoder output
         extra["encoder_out"] = encoder_out["encoder_out"]

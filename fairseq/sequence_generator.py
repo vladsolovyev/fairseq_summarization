@@ -9,7 +9,6 @@ from typing import Dict, List, Optional
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch import Tensor
 
 from fairseq import search, utils
@@ -210,7 +209,6 @@ class SequenceGenerator(nn.Module):
         prefix_tokens: Optional[Tensor] = None,
         constraints: Optional[Tensor] = None,
         bos_token: Optional[int] = None,
-        use_language_adapter=False
     ):
         incremental_states = torch.jit.annotate(
             List[Dict[str, Dict[str, Optional[Tensor]]]],
@@ -287,14 +285,6 @@ class SequenceGenerator(nn.Module):
         encoder_outs = self.model.reorder_encoder_out(encoder_outs, new_order)
         # ensure encoder_outs is a List.
         assert encoder_outs is not None
-        decoder = self.model.single_model.decoder
-        if use_language_adapter:
-            x = decoder.layer_norm(encoder_outs[0]["encoder_out"][0])
-            fc_language_adapter_1 = decoder.fc_language_adapter_1[decoder.lang_dict[bos_token]]
-            x = F.relu(fc_language_adapter_1(x))
-            x = decoder.dropout(x)
-            fc_language_adapter_2 = decoder.fc_language_adapter_2[decoder.lang_dict[bos_token]]
-            encoder_outs[0]["encoder_out"][0] = fc_language_adapter_2(x)
 
         # initialize buffers
         scores = (
@@ -372,6 +362,7 @@ class SequenceGenerator(nn.Module):
                     encoder_outs,
                     incremental_states,
                     self.temperature,
+                    sample["tgt_lang_id"]
                 )
 
             if self.lm_model is not None:
@@ -823,6 +814,7 @@ class EnsembleModel(nn.Module):
         encoder_outs: List[Dict[str, List[Tensor]]],
         incremental_states: List[Dict[str, Dict[str, Optional[Tensor]]]],
         temperature: float = 1.0,
+        tgt_lang_id=None
     ):
         log_probs = []
         avg_attn: Optional[Tensor] = None
@@ -836,6 +828,7 @@ class EnsembleModel(nn.Module):
                     tokens,
                     encoder_out=encoder_out,
                     incremental_state=incremental_states[i],
+                    tgt_lang_id=tgt_lang_id
                 )
             else:
                 if hasattr(model, "decoder"):

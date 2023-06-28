@@ -11,7 +11,6 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from fairseq import utils
 from fairseq.models import register_model, register_model_architecture
@@ -93,14 +92,6 @@ class BARTModel(TransformerModel):
             token_embeddings=token_embeddings,
             return_all_hiddens=return_all_hiddens,
         )
-        if self.cfg.use_language_adapter:
-            x = self.decoder.layer_norm(encoder_out["encoder_out"][0])
-            fc_language_adapter_1 = self.decoder.fc_language_adapter_1[self.decoder.lang_dict[tgt_lang_id[0].item()]]
-            x = F.relu(fc_language_adapter_1(x))
-            x = self.decoder.dropout(x)
-            fc_language_adapter_2 = self.decoder.fc_language_adapter_2[self.decoder.lang_dict[tgt_lang_id[0].item()]]
-            encoder_out["encoder_out"][0] = fc_language_adapter_2(x)
-
         x, extra = self.decoder(
             prev_output_tokens,
             encoder_out=encoder_out,
@@ -109,6 +100,7 @@ class BARTModel(TransformerModel):
             alignment_heads=alignment_heads,
             src_lengths=src_lengths,
             return_all_hiddens=return_all_hiddens,
+            tgt_lang_id=tgt_lang_id
         )
         eos: int = self.eos
         if classification_head_name is not None:
