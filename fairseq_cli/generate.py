@@ -8,6 +8,7 @@ Translate pre-processed data with a trained model.
 """
 
 import ast
+import collections
 import logging
 import math
 import os
@@ -187,189 +188,194 @@ def _main(cfg: DictConfig, output_file):
     num_sentences = 0
     has_target = True
     wps_meter = TimeMeter()
-    for samples_dict in progress:
-        for sample in samples_dict.values():
-            sample = utils.move_to_cuda(sample) if use_cuda else sample
-            if "net_input" not in sample:
-                continue
+    samples_list = list()
+    for sample in progress:
+        if type(sample) == collections.OrderedDict:
+            samples_list.extend(sample.values())
+        else:
+            samples_list.append(sample)
+    for sample in samples_list:
+        sample = utils.move_to_cuda(sample) if use_cuda else sample
+        if "net_input" not in sample:
+            continue
 
-            prefix_tokens = None
-            if cfg.generation.prefix_size > 0:
-                prefix_tokens = sample["target"][:, : cfg.generation.prefix_size]
+        prefix_tokens = None
+        if cfg.generation.prefix_size > 0:
+            prefix_tokens = sample["target"][:, : cfg.generation.prefix_size]
 
-            constraints = None
-            if "constraints" in sample:
-                constraints = sample["constraints"]
+        constraints = None
+        if "constraints" in sample:
+            constraints = sample["constraints"]
 
-            gen_timer.start()
-            hypos = task.inference_step(
-                generator,
-                models,
-                sample,
-                prefix_tokens=prefix_tokens,
-                constraints=constraints,
-            )
-            num_generated_tokens = sum(len(h[0]["tokens"]) for h in hypos)
-            gen_timer.stop(num_generated_tokens)
+        gen_timer.start()
+        hypos = task.inference_step(
+            generator,
+            models,
+            sample,
+            prefix_tokens=prefix_tokens,
+            constraints=constraints,
+        )
+        num_generated_tokens = sum(len(h[0]["tokens"]) for h in hypos)
+        gen_timer.stop(num_generated_tokens)
 
-            for i, sample_id in enumerate(sample["id"].tolist()):
-                has_target = sample["target"] is not None
+        for i, sample_id in enumerate(sample["id"].tolist()):
+            has_target = sample["target"] is not None
 
-                # Remove padding
-                if "src_tokens" in sample["net_input"]:
-                    src_tokens = utils.strip_pad(
-                        sample["net_input"]["src_tokens"][i, :], tgt_dict.pad()
-                    )
+            # Remove padding
+            if "src_tokens" in sample["net_input"]:
+                src_tokens = utils.strip_pad(
+                    sample["net_input"]["src_tokens"][i, :], tgt_dict.pad()
+                )
+            else:
+                src_tokens = None
+
+            target_tokens = None
+            if has_target:
+                target_tokens = (
+                    utils.strip_pad(sample["target"][i, :], tgt_dict.pad()).int().cpu()
+                )
+
+            # Either retrieve the original sentences or regenerate them from tokens.
+            if align_dict is not None:
+                src_str = task.dataset(cfg.dataset.gen_subset).src.get_original_text(
+                    sample_id
+                )
+                target_str = task.dataset(cfg.dataset.gen_subset).tgt.get_original_text(
+                    sample_id
+                )
+            else:
+                if src_dict is not None:
+                    src_str = src_dict.string(src_tokens, cfg.common_eval.post_process)
                 else:
-                    src_tokens = None
-
-                target_tokens = None
+                    src_str = ""
                 if has_target:
-                    target_tokens = (
-                        utils.strip_pad(sample["target"][i, :], tgt_dict.pad()).int().cpu()
+                    target_str = tgt_dict.string(
+                        target_tokens,
+                        cfg.common_eval.post_process,
+                        escape_unk=True,
+                        extra_symbols_to_ignore=get_symbols_to_strip_from_output(
+                            generator
+                        ),
                     )
 
-                # Either retrieve the original sentences or regenerate them from tokens.
-                if align_dict is not None:
-                    src_str = task.dataset(cfg.dataset.gen_subset).src.get_original_text(
-                        sample_id
-                    )
-                    target_str = task.dataset(cfg.dataset.gen_subset).tgt.get_original_text(
-                        sample_id
-                    )
-                else:
-                    if src_dict is not None:
-                        src_str = src_dict.string(src_tokens, cfg.common_eval.post_process)
-                    else:
-                        src_str = ""
-                    if has_target:
-                        target_str = tgt_dict.string(
-                            target_tokens,
-                            cfg.common_eval.post_process,
-                            escape_unk=True,
-                            extra_symbols_to_ignore=get_symbols_to_strip_from_output(
-                                generator
-                            ),
-                        )
+            src_str = decode_fn(src_str)
+            if has_target:
+                target_str = decode_fn(target_str)
 
-                src_str = decode_fn(src_str)
+            if not cfg.common_eval.quiet:
+                if src_dict is not None:
+                    print("S-{}\t{}".format(sample_id, src_str), file=output_file)
                 if has_target:
-                    target_str = decode_fn(target_str)
+                    print("T-{}\t{}".format(sample_id, target_str), file=output_file)
 
+            # Process top predictions
+            for j, hypo in enumerate(hypos[i][: cfg.generation.nbest]):
+                hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
+                    hypo_tokens=hypo["tokens"].int().cpu(),
+                    src_str=src_str,
+                    alignment=hypo["alignment"],
+                    align_dict=align_dict,
+                    tgt_dict=tgt_dict,
+                    remove_bpe=cfg.common_eval.post_process,
+                    extra_symbols_to_ignore=get_symbols_to_strip_from_output(generator),
+                )
+                detok_hypo_str = decode_fn(hypo_str)
                 if not cfg.common_eval.quiet:
-                    if src_dict is not None:
-                        print("S-{}\t{}".format(sample_id, src_str), file=output_file)
-                    if has_target:
-                        print("T-{}\t{}".format(sample_id, target_str), file=output_file)
-
-                # Process top predictions
-                for j, hypo in enumerate(hypos[i][: cfg.generation.nbest]):
-                    hypo_tokens, hypo_str, alignment = utils.post_process_prediction(
-                        hypo_tokens=hypo["tokens"].int().cpu(),
-                        src_str=src_str,
-                        alignment=hypo["alignment"],
-                        align_dict=align_dict,
-                        tgt_dict=tgt_dict,
-                        remove_bpe=cfg.common_eval.post_process,
-                        extra_symbols_to_ignore=get_symbols_to_strip_from_output(generator),
+                    score = hypo["score"] / math.log(2)  # convert to base 2
+                    # original hypothesis (after tokenization and BPE)
+                    print(
+                        "H-{}\t{}\t{}".format(sample_id, score, hypo_str),
+                        file=output_file,
                     )
-                    detok_hypo_str = decode_fn(hypo_str)
-                    if not cfg.common_eval.quiet:
-                        score = hypo["score"] / math.log(2)  # convert to base 2
-                        # original hypothesis (after tokenization and BPE)
+                    # detokenized hypothesis
+                    print(
+                        "D-{}\t{}\t{}".format(sample_id, score, detok_hypo_str),
+                        file=output_file,
+                    )
+                    print(
+                        "P-{}\t{}".format(
+                            sample_id,
+                            " ".join(
+                                map(
+                                    lambda x: "{:.4f}".format(x),
+                                    # convert from base e to base 2
+                                    hypo["positional_scores"]
+                                    .div_(math.log(2))
+                                    .tolist(),
+                                )
+                            ),
+                        ),
+                        file=output_file,
+                    )
+
+                    if cfg.generation.print_alignment == "hard":
                         print(
-                            "H-{}\t{}\t{}".format(sample_id, score, hypo_str),
-                            file=output_file,
-                        )
-                        # detokenized hypothesis
-                        print(
-                            "D-{}\t{}\t{}".format(sample_id, score, detok_hypo_str),
-                            file=output_file,
-                        )
-                        print(
-                            "P-{}\t{}".format(
+                            "A-{}\t{}".format(
                                 sample_id,
                                 " ".join(
-                                    map(
-                                        lambda x: "{:.4f}".format(x),
-                                        # convert from base e to base 2
-                                        hypo["positional_scores"]
-                                        .div_(math.log(2))
-                                        .tolist(),
-                                    )
+                                    [
+                                        "{}-{}".format(src_idx, tgt_idx)
+                                        for src_idx, tgt_idx in alignment
+                                    ]
+                                ),
+                            ),
+                            file=output_file,
+                        )
+                    if cfg.generation.print_alignment == "soft":
+                        print(
+                            "A-{}\t{}".format(
+                                sample_id,
+                                " ".join(
+                                    [",".join(src_probs) for src_probs in alignment]
                                 ),
                             ),
                             file=output_file,
                         )
 
-                        if cfg.generation.print_alignment == "hard":
-                            print(
-                                "A-{}\t{}".format(
-                                    sample_id,
-                                    " ".join(
-                                        [
-                                            "{}-{}".format(src_idx, tgt_idx)
-                                            for src_idx, tgt_idx in alignment
-                                        ]
-                                    ),
-                                ),
-                                file=output_file,
+                    if cfg.generation.print_step:
+                        print(
+                            "I-{}\t{}".format(sample_id, hypo["steps"]),
+                            file=output_file,
+                        )
+
+                    if cfg.generation.retain_iter_history:
+                        for step, h in enumerate(hypo["history"]):
+                            _, h_str, _ = utils.post_process_prediction(
+                                hypo_tokens=h["tokens"].int().cpu(),
+                                src_str=src_str,
+                                alignment=None,
+                                align_dict=None,
+                                tgt_dict=tgt_dict,
+                                remove_bpe=None,
                             )
-                        if cfg.generation.print_alignment == "soft":
                             print(
-                                "A-{}\t{}".format(
-                                    sample_id,
-                                    " ".join(
-                                        [",".join(src_probs) for src_probs in alignment]
-                                    ),
-                                ),
+                                "E-{}_{}\t{}".format(sample_id, step, h_str),
                                 file=output_file,
                             )
 
-                        if cfg.generation.print_step:
-                            print(
-                                "I-{}\t{}".format(sample_id, hypo["steps"]),
-                                file=output_file,
-                            )
+                # Score only the top hypothesis
+                if has_target and j == 0:
+                    if (
+                        align_dict is not None
+                        or cfg.common_eval.post_process is not None
+                    ):
+                        # Convert back to tokens for evaluation with unk replacement and/or without BPE
+                        target_tokens = tgt_dict.encode_line(
+                            target_str, add_if_not_exist=True
+                        )
+                        hypo_tokens = tgt_dict.encode_line(
+                            detok_hypo_str, add_if_not_exist=True
+                        )
+                    if hasattr(scorer, "add_string"):
+                        scorer.add_string(target_str, detok_hypo_str)
+                    else:
+                        scorer.add(target_tokens, hypo_tokens)
 
-                        if cfg.generation.retain_iter_history:
-                            for step, h in enumerate(hypo["history"]):
-                                _, h_str, _ = utils.post_process_prediction(
-                                    hypo_tokens=h["tokens"].int().cpu(),
-                                    src_str=src_str,
-                                    alignment=None,
-                                    align_dict=None,
-                                    tgt_dict=tgt_dict,
-                                    remove_bpe=None,
-                                )
-                                print(
-                                    "E-{}_{}\t{}".format(sample_id, step, h_str),
-                                    file=output_file,
-                                )
-
-                    # Score only the top hypothesis
-                    if has_target and j == 0:
-                        if (
-                            align_dict is not None
-                            or cfg.common_eval.post_process is not None
-                        ):
-                            # Convert back to tokens for evaluation with unk replacement and/or without BPE
-                            target_tokens = tgt_dict.encode_line(
-                                target_str, add_if_not_exist=True
-                            )
-                            hypo_tokens = tgt_dict.encode_line(
-                                detok_hypo_str, add_if_not_exist=True
-                            )
-                        if hasattr(scorer, "add_string"):
-                            scorer.add_string(target_str, detok_hypo_str)
-                        else:
-                            scorer.add(target_tokens, hypo_tokens)
-
-            wps_meter.update(num_generated_tokens)
-            progress.log({"wps": round(wps_meter.avg)})
-            num_sentences += (
-                sample["nsentences"] if "nsentences" in sample else sample["id"].numel()
-            )
+        wps_meter.update(num_generated_tokens)
+        progress.log({"wps": round(wps_meter.avg)})
+        num_sentences += (
+            sample["nsentences"] if "nsentences" in sample else sample["id"].numel()
+        )
 
     logger.info("NOTE: hypothesis and token scores are output in base 2")
     logger.info(

@@ -15,7 +15,7 @@ def train_summarization_model(data_dir,
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_decoder_layers=False,
                               encoder_drop_residual=None,
-                              max_update="70000",
+                              max_update="120000",
                               freeze_encoder_layers="0",
                               num_workers="16",
                               use_adversarial_loss=False,
@@ -25,8 +25,8 @@ def train_summarization_model(data_dir,
                               sampling_temperature="1.5",
                               label_smoothing="0.0",
                               use_kldivloss=True,
-                              use_encoder_output_adapter=True,
-                              use_decoder_adapter=True):
+                              use_encoder_output_adapter=False,
+                              use_decoder_adapter=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -52,7 +52,6 @@ def train_summarization_model(data_dir,
          "--weight-decay", "0.01",
          "--dropout", "0.1",
          "--attention-dropout", "0.1",
-         "--max-tokens", "4800",
          "--save-dir", save_dir,
          "--seed", "222",
          "--log-format", "simple",
@@ -94,7 +93,7 @@ def train_summarization_model(data_dir,
                          "--task", "translation_multi_simple_epoch",
                          "--criterion", "label_smoothed_cross_entropy"])
     if validate:
-        sys.argv.extend(["--validate-interval-updates", "3000",
+        sys.argv.extend(["--validate-interval-updates", "5000",
                          "--patience", "1",
                          "--no-last-checkpoints"])
     else:
@@ -107,6 +106,10 @@ def train_summarization_model(data_dir,
         sys.argv.append("--use-encoder-output-adapter")
     if use_decoder_adapter:
         sys.argv.append("--use-decoder-adapter")
+    if use_encoder_output_adapter or use_decoder_adapter:
+        sys.argv.extend(["--max-tokens", "4800"])
+    else:
+        sys.argv.extend(["--max-tokens", "2800"])
 
     train.cli_main()
     sys.argv = sys.argv[:1]

@@ -1159,13 +1159,16 @@ class MultilingualDatasetManager(object):
         sample_ratios = None
         if training and split == getattr(self.args, "train_subset", None):
             sample_ratios = self.get_sampling_ratios(data_param_list, datasets, epoch)
+        collate_format = CollateFormat.single
+        if self.args.use_encoder_output_adapter or self.args.use_decoder_adapter:
+            collate_format = CollateFormat.ordered_dict
         return SampledMultiDataset(
             OrderedDict(datasets),
             epoch=epoch,
             # valid and test datasets will be degerate to concating datasets:
             sampling_ratios=sample_ratios,
             eval_key=None,
-            collate_format=CollateFormat.ordered_dict,
+            collate_format=collate_format,
             virtual_size=self.args.virtual_data_size,
             split=split,
             # if not using lang_tok altering, simplified to use the same collater

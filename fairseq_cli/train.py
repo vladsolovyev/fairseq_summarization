@@ -8,6 +8,7 @@ Train a new model on one or across multiple GPUs.
 """
 
 import argparse
+import collections
 import logging
 import math
 import os
@@ -546,9 +547,14 @@ def validate(
         # create a new root metrics aggregator so validation metrics
         # don't pollute other aggregators (e.g., train meters)
         with metrics.aggregate(new_root=True) as agg:
-            for samples_dict in progress:
-                for sample in samples_dict.values():
-                    trainer.valid_step(sample)
+            samples_list = list()
+            for sample in progress:
+                if type(sample) == collections.OrderedDict:
+                    samples_list.extend(sample.values())
+                else:
+                    samples_list.append(sample)
+            for sample in samples_list:
+                trainer.valid_step(sample)
 
         # log validation stats
         # only tracking the best metric on the 1st validation subset

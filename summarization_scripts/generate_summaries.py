@@ -16,8 +16,8 @@ def generate_and_evaluate_summaries(directory,
                                     translate_to_lang="",
                                     rouge_scorer="huggingface",
                                     append_src_tok=True,
-                                    use_encoder_output_adapter=True,
-                                    use_decoder_adapter=True):
+                                    use_encoder_output_adapter=False,
+                                    use_decoder_adapter=False):
     sys.argv.extend(
         [directory,
          "--path", checkpoint,
@@ -28,6 +28,7 @@ def generate_and_evaluate_summaries(directory,
          "--langs", "ar_AR,cs_CZ,de_DE,en_XX,es_XX,et_EE,fi_FI,fr_XX,gu_IN,hi_IN,it_IT,ja_XX,"
                     "kk_KZ,ko_KR,lt_LT,lv_LV,my_MM,ne_NP,nl_XX,ro_RO,ru_RU,si_LK,tr_TR,vi_VN,zh_CN",
          "--lang-pairs", lang_pairs,
+         "--enable-lang-ids",
          "--source-lang", source_language,
          "--target-lang", target_language,
          "--max-tokens", "30000",
