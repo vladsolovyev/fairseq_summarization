@@ -34,7 +34,10 @@ def calculate_xlsum_baseline(output_dir=""):
     shutil.rmtree(checkpoint_dir)
 
 
-def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", prefix="", freeze_encoder_layers="0"):
+def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
+                          freeze_encoder_layers="0", adversarial_kldivloss=False,
+                          adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0",
+                          add_translated_results=False):
     output_dir = "{}/{}".format(experiments_folder, prefix)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
@@ -47,7 +50,9 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               lang_pairs="en_XX-en_XX",
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
-                              freeze_encoder_layers=freeze_encoder_layers)
+                              freeze_encoder_layers=freeze_encoder_layers,
+                              masked_labels=masked_labels,
+                              label_smoothing=label_smoothing)
     free_memory()
     metrics["en_XX"] = generate_and_evaluate_summaries(directory="xlsum",
                                                        source_language="en_XX",
@@ -76,7 +81,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
     # Translate summaries in english back into spanish, russian and gujarati
     # and evaluate using original data in these languages.
     # Do it only once at the beginning and use these results as a reference in other runs.
-    if freeze_encoder_layers == "0" and not encoder_drop_residual:
+    if add_translated_results:
         translation_metrics = dict()
         for translation_language in ["es", "ru", "gu"]:
             result = generate_and_evaluate_summaries(directory="xlsum_{}_en".format(translation_language),
@@ -106,7 +111,9 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                       encoder_drop_residual=encoder_drop_residual,
                                       num_workers="1",
                                       validate=False,
-                                      max_epoch=max_epoch)
+                                      max_epoch=max_epoch,
+                                      masked_labels=masked_labels,
+                                      label_smoothing=label_smoothing)
             free_memory()
             metrics["{}_tuned_{}".format(language, data_size)] = \
                 generate_and_evaluate_summaries(directory="xlsum",
@@ -127,7 +134,9 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   lang_pairs="{}-{}".format(language, language),
                                   checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
-                                  encoder_drop_residual=encoder_drop_residual)
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  masked_labels=masked_labels,
+                                  label_smoothing=label_smoothing)
         free_memory()
         metrics["{}_tuned_all".format(language)] = \
             generate_and_evaluate_summaries(directory="xlsum",
@@ -148,7 +157,9 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
-                              freeze_encoder_layers=freeze_encoder_layers)
+                              freeze_encoder_layers=freeze_encoder_layers,
+                              masked_labels=masked_labels,
+                              label_smoothing=label_smoothing)
     free_memory()
     for language in languages:
         metrics["{}_multiEnEsRu".format(language)] = \
@@ -171,7 +182,9 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   encoder_drop_residual=encoder_drop_residual,
                                   num_workers="1",
                                   validate=False,
-                                  max_epoch=max_epoch)
+                                  max_epoch=max_epoch,
+                                  masked_labels=masked_labels,
+                                  label_smoothing=label_smoothing)
         metrics["gu_IN_multiEnEsRu_{}".format(data_size)] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language="gu_IN",
@@ -190,7 +203,9 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               lang_pairs="gu_IN-gu_IN",
                               checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
                               save_dir=checkpoint_dir,
-                              encoder_drop_residual=encoder_drop_residual)
+                              encoder_drop_residual=encoder_drop_residual,
+                              masked_labels=masked_labels,
+                              label_smoothing=label_smoothing)
     free_memory()
     metrics["gu_IN_multiEnEsRu_all"] = \
         generate_and_evaluate_summaries(directory="xlsum",
@@ -204,81 +219,123 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
     shutil.rmtree(checkpoint_dir)
     free_memory()
 
-    # Tune multilingual model using adversarial loss
-    checkpoint_dir = "{}/multiEnEsRu_with_classifier".format(output_dir)
-    train_summarization_model(data_dir="xlsum",
-                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
-                              checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
-                              save_dir=checkpoint_dir,
-                              use_adversarial_loss=True,
-                              max_update="60000",
-                              validate=False,
-                              encoder_drop_residual=encoder_drop_residual,
-                              freeze_encoder_layers=freeze_encoder_layers,
-                              append_src_tok=False,
-                              sampling_temperature="30")
-    free_memory()
-    for language in languages:
-        metrics["{}_multiEnEsRu_adv".format(language)] = \
-            generate_and_evaluate_summaries(directory="xlsum",
-                                            source_language=language,
-                                            target_language=language,
-                                            lang_pairs="{}-{}".format(language, language),
-                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                            lenpen=lenpen,
-                                            rouge_scorer=rouge_scorer,
-                                            append_src_tok=False)
-        save_metrics(metrics, output_dir)
+    # Tune multilingual model using adversarial loss using nllloss
+    if adversarial_nllloss:
+        checkpoint_dir = "{}/multiEnEsRu_with_classifier".format(output_dir)
+        train_summarization_model(data_dir="xlsum",
+                                  lang_pairs=",".join(
+                                      ["{}-{}".format(language, language) for language in languages[:-1]]),
+                                  checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
+                                  save_dir=checkpoint_dir,
+                                  use_adversarial_loss=True,
+                                  max_update="60000",
+                                  validate=False,
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers,
+                                  append_src_tok=False,
+                                  sampling_temperature="30",
+                                  use_kldivloss=False,
+                                  masked_labels=masked_labels,
+                                  label_smoothing=label_smoothing)
         free_memory()
-    # few shot experiments. Tune multilingual model using few data from gujarati dataset
-    for data_size, max_epoch in zip([10, 100, 1000], ["12", "6", "4"]):
-        checkpoint_dir = "{}/multiEnEsRu_gujarati_{}".format(output_dir, data_size)
-        train_summarization_model(data_dir="xlsum_{}".format(data_size),
+        for language in languages:
+            metrics["{}_multiEnEsRu_adv_nll".format(language)] = \
+                generate_and_evaluate_summaries(directory="xlsum",
+                                                source_language=language,
+                                                target_language=language,
+                                                lang_pairs="{}-{}".format(language, language),
+                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                lenpen=lenpen,
+                                                rouge_scorer=rouge_scorer,
+                                                append_src_tok=False)
+            save_metrics(metrics, output_dir)
+            free_memory()
+        shutil.rmtree(checkpoint_dir)
+
+    # Tune multilingual model using adversarial loss using kldivloss
+    if adversarial_kldivloss:
+        checkpoint_dir = "{}/multiEnEsRu_with_classifier".format(output_dir)
+        train_summarization_model(data_dir="xlsum",
+                                  lang_pairs=",".join(
+                                      ["{}-{}".format(language, language) for language in languages[:-1]]),
+                                  checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
+                                  save_dir=checkpoint_dir,
+                                  use_adversarial_loss=True,
+                                  max_update="60000",
+                                  validate=False,
+                                  encoder_drop_residual=encoder_drop_residual,
+                                  freeze_encoder_layers=freeze_encoder_layers,
+                                  append_src_tok=False,
+                                  sampling_temperature="30",
+                                  use_kldivloss=True,
+                                  masked_labels=masked_labels,
+                                  label_smoothing=label_smoothing)
+        free_memory()
+        for language in languages:
+            metrics["{}_multiEnEsRu_adv_kldivloss".format(language)] = \
+                generate_and_evaluate_summaries(directory="xlsum",
+                                                source_language=language,
+                                                target_language=language,
+                                                lang_pairs="{}-{}".format(language, language),
+                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                lenpen=lenpen,
+                                                rouge_scorer=rouge_scorer,
+                                                append_src_tok=False)
+            save_metrics(metrics, output_dir)
+            free_memory()
+        # few shot experiments. Tune multilingual model using few data from gujarati dataset
+        for data_size, max_epoch in zip([10, 100, 1000], ["12", "6", "4"]):
+            checkpoint_dir = "{}/multiEnEsRu_gujarati_{}".format(output_dir, data_size)
+            train_summarization_model(data_dir="xlsum_{}".format(data_size),
+                                      lang_pairs="gu_IN-gu_IN",
+                                      checkpoint="{}/multiEnEsRu_with_classifier/checkpoint_last.pt".format(output_dir),
+                                      save_dir=checkpoint_dir,
+                                      encoder_drop_residual=encoder_drop_residual,
+                                      num_workers="1",
+                                      validate=False,
+                                      max_epoch=max_epoch,
+                                      append_src_tok=False,
+                                      masked_labels=masked_labels,
+                                      label_smoothing=label_smoothing)
+            metrics["gu_IN_multiEnEsRu_adv_kldivloss_{}".format(data_size)] = \
+                generate_and_evaluate_summaries(directory="xlsum",
+                                                source_language="gu_IN",
+                                                target_language="gu_IN",
+                                                lang_pairs="gu_IN-gu_IN",
+                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                lenpen=lenpen,
+                                                rouge_scorer=rouge_scorer,
+                                                append_src_tok=False)
+            save_metrics(metrics, output_dir)
+            shutil.rmtree(checkpoint_dir)
+            free_memory()
+
+        # tune multilingual model and evaluate it using gujarati dataset
+        checkpoint_dir = "{}/multiEnEsRu_gujarati".format(output_dir)
+        train_summarization_model(data_dir="xlsum",
                                   lang_pairs="gu_IN-gu_IN",
                                   checkpoint="{}/multiEnEsRu_with_classifier/checkpoint_last.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
-                                  num_workers="1",
-                                  validate=False,
-                                  max_epoch=max_epoch,
-                                  append_src_tok=False)
-        metrics["gu_IN_multiEnEsRu_adv_{}".format(data_size)] = \
+                                  append_src_tok=False,
+                                  masked_labels=masked_labels,
+                                  label_smoothing=label_smoothing)
+        free_memory()
+        metrics["gu_IN_multiEnEsRu_adv_kldivloss_all"] = \
             generate_and_evaluate_summaries(directory="xlsum",
                                             source_language="gu_IN",
                                             target_language="gu_IN",
                                             lang_pairs="gu_IN-gu_IN",
-                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
                                             lenpen=lenpen,
                                             rouge_scorer=rouge_scorer,
                                             append_src_tok=False)
         save_metrics(metrics, output_dir)
         shutil.rmtree(checkpoint_dir)
         free_memory()
-
-    # tune multilingual model and evaluate it using gujarati dataset
-    checkpoint_dir = "{}/multiEnEsRu_gujarati".format(output_dir)
-    train_summarization_model(data_dir="xlsum",
-                              lang_pairs="gu_IN-gu_IN",
-                              checkpoint="{}/multiEnEsRu_with_classifier/checkpoint_last.pt".format(output_dir),
-                              save_dir=checkpoint_dir,
-                              encoder_drop_residual=encoder_drop_residual,
-                              append_src_tok=False)
-    free_memory()
-    metrics["gu_IN_multiEnEsRu_adv_all"] = \
-        generate_and_evaluate_summaries(directory="xlsum",
-                                        source_language="gu_IN",
-                                        target_language="gu_IN",
-                                        lang_pairs="gu_IN-gu_IN",
-                                        checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
-                                        lenpen=lenpen,
-                                        rouge_scorer=rouge_scorer,
-                                        append_src_tok=False)
-    save_metrics(metrics, output_dir)
-    shutil.rmtree(checkpoint_dir)
-    free_memory()
+        shutil.rmtree("{}/multiEnEsRu_with_classifier".format(output_dir))
 
     shutil.rmtree("{}/multiEnEsRu".format(output_dir))
-    shutil.rmtree("{}/multiEnEsRu_with_classifier".format(output_dir))
 
 
 if __name__ == "__main__":

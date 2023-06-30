@@ -26,7 +26,8 @@ def train_summarization_model(data_dir,
                               label_smoothing="0.0",
                               use_kldivloss=True,
                               use_encoder_output_adapter=False,
-                              use_decoder_adapter=False):
+                              use_decoder_adapter=False,
+                              masked_labels=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -110,6 +111,8 @@ def train_summarization_model(data_dir,
         sys.argv.extend(["--max-tokens", "4800"])
     else:
         sys.argv.extend(["--max-tokens", "2800"])
+    if masked_labels:
+        sys.argv.append("--masked-labels")
 
     train.cli_main()
     sys.argv = sys.argv[:1]
