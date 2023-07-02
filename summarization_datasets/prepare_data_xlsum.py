@@ -15,7 +15,7 @@ datasets = [load_dataset("GEM/xlsum", "english", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "russian", cache_dir="./cache"),
             load_dataset("GEM/xlsum", "gujarati", cache_dir="./cache")]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
-translation_model = EasyNMT("mbart50_m2en")
+translation_model = EasyNMT("mbart50_m2en", cache_folder="./cache")
 
 
 def create_translated_data(dataset, source_lang):

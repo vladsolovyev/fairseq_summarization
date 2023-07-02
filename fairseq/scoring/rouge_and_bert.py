@@ -16,7 +16,7 @@ from fairseq.dataclass import FairseqDataclass
 from fairseq.scoring import BaseScorer, register_scorer
 
 nltk.download("stopwords")
-translation_model = EasyNMT("mbart50_en2m")
+translation_model = EasyNMT("mbart50_en2m", cache_folder="./cache")
 translation_to_mbart_language = dict({"es": "es_XX",
                                       "ru": "ru_RU",
                                       "gu": "gu_IN"})
