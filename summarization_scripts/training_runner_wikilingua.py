@@ -82,7 +82,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
     # Tune monolingual model using few supervised data
     for language_pair in language_pairs:
         for data_size, max_epoch in zip([10, 100, 1000, 10000], ["12", "6", "4", "2"]):
-            if (language_pair[0] == "tr_TR" or language_pair[0] == "tr_TR") and data_size == 10000:
+            if (language_pair[0] == "tr_TR" or language_pair[1] == "tr_TR") and data_size == 10000:
                 continue
             checkpoint_dir = "{}/wikilingua_{}/{}-{}".format(output_dir, data_size, language_pair[0], language_pair[1])
             train_summarization_model(data_dir="wikilingua_{}".format(data_size),
@@ -220,7 +220,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
         # Tune monolingual model using few supervised data
         for language_pair in language_pairs:
             for data_size, max_epoch in zip([10, 100, 1000, 10000], ["12", "6", "4", "2"]):
-                if (language_pair[0] == "tr_TR" or language_pair[0] == "tr_TR") and data_size == 10000:
+                if (language_pair[0] == "tr_TR" or language_pair[1] == "tr_TR") and data_size == 10000:
                     continue
                 checkpoint_dir = "{}/wikilingua_{}/{}-{}".format(output_dir, data_size, language_pair[0],
                                                                  language_pair[1])
