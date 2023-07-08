@@ -26,7 +26,7 @@ def start_wikilingua_experiments(date):
                                label_smoothing="0.1")
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="masked_label",
-                               label_smoothing="0.05",
+                               label_smoothing="0.1",
                                masked_labels=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="residual_drop_at_4",
