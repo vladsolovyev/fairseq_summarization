@@ -269,7 +269,8 @@ class SampledMultiDataset(FairseqDataset):
                 ]
             )
         elif self.shared_collater:
-            batch = self.datasets[0].collater([s for _, s in samples])
+            batch = self.datasets[0].collater([s for _, s in samples],
+                                              masked_labels_per_language=self.masked_labels_per_language)
         else:
             samples_dict = defaultdict(list)
             pad_to_length = (
@@ -287,7 +288,8 @@ class SampledMultiDataset(FairseqDataset):
                     )
                 samples_dict[ds_idx].append(s)
             batches = [
-                self.datasets[i].collater(samples_dict[i], pad_to_length=pad_to_length)
+                self.datasets[i].collater(samples_dict[i], pad_to_length=pad_to_length,
+                                          masked_labels_per_language=self.masked_labels_per_language)
                 for i in range(len(self.datasets))
                 if len(samples_dict[i]) > 0
             ]
@@ -330,6 +332,10 @@ class SampledMultiDataset(FairseqDataset):
             if "tgt_lang_id" in batches[0]:
                 batch["tgt_lang_id"] = straight_order(
                     [b["tgt_lang_id"] for b in batches]
+                )
+            if "masked_labels" in batches[0]:
+                batch["masked_labels"] = straight_order(
+                    [b["masked_labels"] for b in batches]
                 )
         return batch
 

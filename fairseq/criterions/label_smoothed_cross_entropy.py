@@ -34,11 +34,10 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
     if target.dim() == lprobs.dim() - 1:
         target = target.unsqueeze(-1)
     nll_loss = -lprobs.gather(dim=-1, index=target)
+    smooth_loss = lprobs.clone()
     if masked_labels is not None:
-        smooth_loss = lprobs[:, masked_labels]
-    else:
-        smooth_loss = lprobs
-    eps_i = epsilon / (smooth_loss.size(-1) - 1)
+        smooth_loss.masked_fill_(~masked_labels, 0.0)
+    eps_i = epsilon / (lprobs.size(-1) - 1)
     smooth_loss = -smooth_loss.sum(dim=-1, keepdim=True)
     if ignore_index is not None:
         pad_mask = target.eq(ignore_index)
@@ -105,17 +104,21 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
             # lprobs: B x T x C
             lprobs = lprobs[:, self.ignore_prefix_size :, :].contiguous()
             target = target[:, self.ignore_prefix_size :].contiguous()
-        return lprobs.view(-1, lprobs.size(-1)), target.view(-1)
+        masked_labels = None
+        if "masked_labels" in sample:
+            masked_labels =\
+                sample["masked_labels"][:, None, :].expand(lprobs.shape).contiguous()
+        return lprobs.view(-1, lprobs.size(-1)), target.view(-1), masked_labels.view(-1, masked_labels.size(-1))
 
     def compute_loss(self, model, net_output, sample, reduce=True):
-        lprobs, target = self.get_lprobs_and_target(model, net_output, sample)
+        lprobs, target, masked_labels = self.get_lprobs_and_target(model, net_output, sample)
         loss, nll_loss = label_smoothed_nll_loss(
             lprobs,
             target,
             self.eps,
             ignore_index=self.padding_idx,
             reduce=reduce,
-            masked_labels=sample["masked_labels"] if "masked_labels" in sample else None
+            masked_labels=masked_labels
         )
         return loss, nll_loss
 
