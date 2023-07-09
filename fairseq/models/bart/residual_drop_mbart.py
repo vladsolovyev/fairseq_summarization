@@ -58,14 +58,20 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
     def __init__(self, args, dictionary, embed_tokens):
         super().__init__(args, dictionary, embed_tokens)
         self.use_encoder_output_adapter = args.use_encoder_output_adapter
-        self.lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
-        self.fc_language_adapter = nn.ModuleList()
-        for i in range(len(self.lang_dict)):
-            self.fc_language_adapter.append(nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim))
+        self.lang_dict = dict(
+            {250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
+        self.language_adapter = nn.ModuleList()
+        for _ in range(len(self.lang_dict)):
+            self.language_adapter.append(
+                nn.Sequential(
+                    nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim),
+                    LayerNorm(args.encoder_embed_dim)
+                )
+            )
         self.dropout = FairseqDropout(args.dropout, module_name=self.__class__.__name__)
-        self.layers = nn.ModuleList(
-            [AdapterTransformerDecoderLayer(args, len(self.lang_dict), self.lang_dict) for i in range(args.decoder_layers)]
-        )
+        self.layers = nn.ModuleList()
+        for _ in range(args.decoder_layers):
+            self.layers.append(AdapterTransformerDecoderLayer(args, len(self.lang_dict), self.lang_dict))
 
     def extract_features_scriptable(
             self,
@@ -78,9 +84,9 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
             tgt_lang_id=None
     ):
         if self.use_encoder_output_adapter:
-            fc_language_adapter = self.fc_language_adapter[self.lang_dict[tgt_lang_id[0].item()]]
-            x = self.dropout(encoder_out["encoder_out"][0])
-            encoder_out["encoder_out"][0] = F.relu(fc_language_adapter(x))
+            language_adapter = self.language_adapter[self.lang_dict[tgt_lang_id[0].item()]]
+            x = language_adapter(encoder_out["encoder_out"][0])
+            encoder_out["encoder_out"][0] = self.dropout(F.relu(x))
         return super().extract_features_scriptable(
             prev_output_tokens,
             encoder_out,
