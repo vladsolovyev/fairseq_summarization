@@ -40,7 +40,8 @@ def calculate_wikilingua_baseline(output_dir=""):
 def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
                                freeze_encoder_layers="0", use_encoder_output_adapter=False,
                                use_decoder_adapter=False, adversarial_kldivloss=False,
-                               adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0"):
+                               adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0",
+                               freeze_decoder_layers=False):
     if use_encoder_output_adapter or use_decoder_adapter:
         language_pairs = language_pairs_evaluation[:4]
     else:
@@ -58,6 +59,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                               save_dir=monolingual_checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
+                              freeze_decoder_layers=freeze_decoder_layers,
                               use_encoder_output_adapter=use_encoder_output_adapter,
                               use_decoder_adapter=use_decoder_adapter,
                               masked_labels=masked_labels,
@@ -149,6 +151,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   save_dir=monolingual_adv_checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
+                                  freeze_decoder_layers=freeze_decoder_layers,
                                   use_adversarial_loss=True,
                                   max_update="60000",
                                   validate=False,
@@ -188,6 +191,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   save_dir=monolingual_adv_checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
+                                  freeze_decoder_layers=freeze_decoder_layers,
                                   use_adversarial_loss=True,
                                   max_update="60000",
                                   validate=False,

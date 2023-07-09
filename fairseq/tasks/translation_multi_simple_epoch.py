@@ -239,7 +239,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                 for par in layer.parameters():
                     par.requires_grad = False
             if args.freeze_decoder_layers:
-                for layer in model.decoder.layers:
+                for layer in model.decoder.layers[6:]:
                     for par in layer.parameters():
                         par.requires_grad = False
         return model

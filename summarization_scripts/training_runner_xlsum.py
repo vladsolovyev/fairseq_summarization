@@ -37,7 +37,7 @@ def calculate_xlsum_baseline(output_dir=""):
 def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
                           freeze_encoder_layers="0", adversarial_kldivloss=False,
                           adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0",
-                          add_translated_results=False):
+                          add_translated_results=False, freeze_decoder_layers=False):
     output_dir = "{}/{}".format(experiments_folder, prefix)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
@@ -51,6 +51,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
+                              freeze_decoder_layers=freeze_decoder_layers,
                               masked_labels=masked_labels,
                               label_smoothing=label_smoothing)
     free_memory()
@@ -158,6 +159,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               save_dir=checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
+                              freeze_decoder_layers=freeze_decoder_layers,
                               masked_labels=masked_labels,
                               label_smoothing=label_smoothing)
     free_memory()
@@ -232,6 +234,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   validate=False,
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
+                                  freeze_decoder_layers=freeze_decoder_layers,
                                   append_src_tok=False,
                                   sampling_temperature="30",
                                   use_kldivloss=False,
@@ -265,6 +268,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   validate=False,
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
+                                  freeze_decoder_layers=freeze_decoder_layers,
                                   append_src_tok=False,
                                   sampling_temperature="30",
                                   use_kldivloss=True,
