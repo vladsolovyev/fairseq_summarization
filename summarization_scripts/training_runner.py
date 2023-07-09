@@ -35,7 +35,8 @@ def start_wikilingua_experiments(date):
                                prefix="frozen_layers_6",
                                freeze_encoder_layers="6")
     run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="decoder_frozen_layers_6",
+                               prefix="fronzen_encoder_decoder",
+                               freeze_encoder_layers="6",
                                freeze_decoder_layers=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="decoder_adapter",
@@ -75,7 +76,8 @@ def start_xlsum_experiments(date):
                           prefix="frozen_layers_6",
                           freeze_encoder_layers="6")
     run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="decoder_frozen_layers_6",
+                          prefix="fronzen_encoder_decoder",
+                          freeze_encoder_layers="6",
                           freeze_decoder_layers=True)
     # here combine best parameters
 
