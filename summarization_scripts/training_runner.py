@@ -32,11 +32,11 @@ def start_wikilingua_experiments(date):
                                prefix="residual_drop_at_4",
                                encoder_drop_residual="3")
     run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_layers_6",
-                               freeze_encoder_layers="6")
+                               prefix="frozen_layers_8",
+                               freeze_encoder_layers="8")
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_encoder_decoder",
-                               freeze_encoder_layers="6",
+                               freeze_encoder_layers="8",
                                freeze_decoder_layers=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="decoder_adapter",
@@ -73,11 +73,11 @@ def start_xlsum_experiments(date):
                           prefix="residual_drop_at_5",
                           encoder_drop_residual="4")
     run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="frozen_layers_6",
-                          freeze_encoder_layers="6")
+                          prefix="frozen_layers_8",
+                          freeze_encoder_layers="8")
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="frozen_encoder_decoder",
-                          freeze_encoder_layers="6",
+                          freeze_encoder_layers="8",
                           freeze_decoder_layers=True)
     # here combine best parameters
 
