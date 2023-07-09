@@ -239,9 +239,10 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                 for par in layer.parameters():
                     par.requires_grad = False
             if args.freeze_decoder_layers:
-                for layer in model.decoder.layers[6:]:
-                    for par in layer.parameters():
-                        par.requires_grad = False
+                for layer in model.decoder.layers:
+                    for par in layer.named_parameters():
+                        if "encoder_attn" not in par[0] and par[1].requires_grad:
+                            par[1].requires_grad = False
         return model
 
     def valid_step(self, sample, model, criterion):
