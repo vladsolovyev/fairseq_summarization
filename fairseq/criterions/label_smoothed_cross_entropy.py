@@ -107,8 +107,8 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         masked_labels = None
         if "masked_labels" in sample:
             masked_labels =\
-                sample["masked_labels"][:, None, :].expand(lprobs.shape).contiguous()
-        return lprobs.view(-1, lprobs.size(-1)), target.view(-1), masked_labels.view(-1, masked_labels.size(-1))
+                sample["masked_labels"][:, None, :].expand(lprobs.shape).contiguous().view(-1, lprobs.size(-1))
+        return lprobs.view(-1, lprobs.size(-1)), target.view(-1), masked_labels
 
     def compute_loss(self, model, net_output, sample, reduce=True):
         lprobs, target, masked_labels = self.get_lprobs_and_target(model, net_output, sample)
