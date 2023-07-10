@@ -70,8 +70,8 @@ def start_xlsum_experiments(date):
                           label_smoothing="0.1",
                           masked_labels=True)
     run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="residual_drop_at_5",
-                          encoder_drop_residual="4")
+                          prefix="residual_drop_at_4",
+                          encoder_drop_residual="3")
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="frozen_layers_8",
                           freeze_encoder_layers="8")
