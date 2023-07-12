@@ -27,7 +27,7 @@ def train_summarization_model(data_dir,
                               use_kldivloss=True,
                               use_encoder_output_adapter=False,
                               use_decoder_adapter=False,
-                              masked_labels=True,
+                              masked_labels=False,
                               sampling="temperature"):
     sys.argv.extend(
         [data_dir,
