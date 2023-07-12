@@ -48,6 +48,10 @@ def start_wikilingua_experiments(date):
                                prefix="both_adapters",
                                use_decoder_adapter=True,
                                use_encoder_output_adapter=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="frozen_everything_except_attention_key_and_query",
+                               freeze_encoder_layers="12",
+                               freeze_decoder_layers=True)
     # here combine best parameters
 
 
@@ -78,6 +82,10 @@ def start_xlsum_experiments(date):
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="frozen_encoder_decoder",
                           freeze_encoder_layers="8",
+                          freeze_decoder_layers=True)
+    run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="frozen_everything_except_attention_key_and_query",
+                          freeze_encoder_layers="12",
                           freeze_decoder_layers=True)
     # here combine best parameters
 

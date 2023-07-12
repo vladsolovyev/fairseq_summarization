@@ -241,7 +241,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
             if args.freeze_decoder_layers:
                 for layer in model.decoder.layers:
                     for par in layer.named_parameters():
-                        if "encoder_attn" not in par[0] and par[1].requires_grad:
+                        if "encoder_attn.k" not in par[0] and "encoder_attn.q" not in par[0] and par[1].requires_grad:
                             par[1].requires_grad = False
         return model
 
