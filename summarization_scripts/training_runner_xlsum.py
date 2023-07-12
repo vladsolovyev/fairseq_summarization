@@ -236,7 +236,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   freeze_encoder_layers=freeze_encoder_layers,
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   append_src_tok=False,
-                                  sampling_temperature="30",
+                                  sampling="uniform",
                                   use_kldivloss=False,
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing)
@@ -270,7 +270,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   freeze_encoder_layers=freeze_encoder_layers,
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   append_src_tok=False,
-                                  sampling_temperature="30",
+                                  sampling="uniform",
                                   use_kldivloss=True,
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing)

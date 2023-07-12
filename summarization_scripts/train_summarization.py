@@ -27,13 +27,14 @@ def train_summarization_model(data_dir,
                               use_kldivloss=True,
                               use_encoder_output_adapter=False,
                               use_decoder_adapter=False,
-                              masked_labels=False):
+                              masked_labels=True,
+                              sampling="temperature"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
          "--decoder-normalize-before",
          "--layernorm-embedding",
-         "--sampling-method", "temperature",
+         "--sampling-method", sampling,
          "--sampling-temperature", sampling_temperature,
          "--encoder-langtok", "src",
          "--decoder-langtok",

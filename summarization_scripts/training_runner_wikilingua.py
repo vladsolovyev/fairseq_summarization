@@ -160,7 +160,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing,
                                   append_src_tok=False,
-                                  sampling_temperature="30",
+                                  sampling="uniform",
                                   use_kldivloss=False)
 
         # evaluate supervised cases
@@ -200,7 +200,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing,
                                   append_src_tok=False,
-                                  sampling_temperature="30",
+                                  sampling="uniform",
                                   use_kldivloss=True)
 
         # evaluate supervised cases
