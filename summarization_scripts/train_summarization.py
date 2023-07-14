@@ -28,7 +28,7 @@ def train_summarization_model(data_dir,
                               use_encoder_output_adapter=False,
                               use_decoder_adapter=False,
                               masked_labels=False,
-                              sampling="temperature"):
+                              sampling="uniform"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
