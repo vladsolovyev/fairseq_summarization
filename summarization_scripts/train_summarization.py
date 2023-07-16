@@ -109,7 +109,7 @@ def train_summarization_model(data_dir,
     if use_decoder_adapter:
         sys.argv.append("--use-decoder-adapter")
     if use_encoder_output_adapter or use_decoder_adapter:
-        sys.argv.extend(["--max-tokens", "4800"])
+        sys.argv.extend(["--max-tokens", "4500"])
     else:
         sys.argv.extend(["--max-tokens", "2800"])
     if masked_labels:
