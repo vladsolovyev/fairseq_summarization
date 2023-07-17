@@ -21,7 +21,8 @@ def calculate_wikilingua_baseline(output_dir=""):
     train_summarization_model(data_dir="wikilingua",
                               lang_pairs=",".join(["{}-{}".format(language_pair[0], language_pair[1])
                                                    for language_pair in language_pairs_evaluation]),
-                              save_dir=checkpoint_dir)
+                              save_dir=checkpoint_dir,
+                              sampling="temperature")
     free_memory()
     for language_pair in language_pairs_evaluation:
         metrics["{}_{}_baseline".format(language_pair[0], language_pair[1])] = \

@@ -18,7 +18,8 @@ def calculate_xlsum_baseline(output_dir=""):
     checkpoint_dir = "{}/baseline".format(output_dir)
     train_summarization_model(data_dir="xlsum",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
-                              save_dir=checkpoint_dir)
+                              save_dir=checkpoint_dir,
+                              sampling="temperature")
     free_memory()
     for language in languages:
         metrics["{}_baseline".format(language)] = \
