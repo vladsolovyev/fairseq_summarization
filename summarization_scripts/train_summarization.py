@@ -20,6 +20,7 @@ def train_summarization_model(data_dir,
                               num_workers="16",
                               use_adversarial_loss=False,
                               validate=True,
+                              freeze_elements="everything",
                               max_epoch=None,
                               append_src_tok=True,
                               sampling_temperature="1.5",
@@ -73,6 +74,7 @@ def train_summarization_model(data_dir,
          "--no-epoch-checkpoints",
          "--freeze-embeddings",
          "--freeze-encoder-layers", freeze_encoder_layers,
+         "--freeze-elements", freeze_elements,
          "--label-smoothing", label_smoothing]
     )
     if freeze_decoder_layers:

@@ -22,37 +22,50 @@ def start_wikilingua_experiments(date):
                                adversarial_nllloss=True,
                                adversarial_kldivloss=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="frozen_except_attn_vqk",
+                               freeze_encoder_layers="12",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_vqk",
+                               adversarial_nllloss=True,
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="frozen_except_attn_and_layer_norm",
+                               freeze_encoder_layers="12",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_and_layer_norm",
+                               adversarial_nllloss=True,
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="residual_drop_at_4",
+                               encoder_drop_residual="3",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_vqk",
+                               adversarial_nllloss=True,
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="decoder_adapter",
+                               use_decoder_adapter=True,
+                               freeze_encoder_layers="12",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_and_layer_norm",
+                               adversarial_nllloss=True,
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="encoder_output_adapter",
+                               use_encoder_output_adapter=True,
+                               freeze_encoder_layers="12",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_and_layer_norm",
+                               adversarial_nllloss=True,
+                               adversarial_kldivloss=True)
+    # make experiments with label smoothing with the best model
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="normal_label_smoothing",
                                label_smoothing="0.1")
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="masked_label",
                                label_smoothing="0.1",
                                masked_labels=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="residual_drop_at_4",
-                               encoder_drop_residual="3")
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_layers_8",
-                               freeze_encoder_layers="8")
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_encoder_decoder",
-                               freeze_encoder_layers="8",
-                               freeze_decoder_layers=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="decoder_adapter",
-                               use_decoder_adapter=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="encoder_output_adapter",
-                               use_encoder_output_adapter=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="both_adapters",
-                               use_decoder_adapter=True,
-                               use_encoder_output_adapter=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_everything_except_attention_key_and_query",
-                               freeze_encoder_layers="12",
-                               freeze_decoder_layers=True)
-    # here combine best parameters
 
 
 def start_xlsum_experiments(date):
@@ -67,27 +80,34 @@ def start_xlsum_experiments(date):
                           adversarial_kldivloss=True,
                           add_translated_results=True)
     run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="frozen_except_attn_vqk",
+                          freeze_encoder_layers="12",
+                          freeze_decoder_layers=True,
+                          freeze_elements="attn_vqk",
+                          adversarial_nllloss=True,
+                          adversarial_kldivloss=True)
+    run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="frozen_except_attn_and_layer_norm",
+                          freeze_encoder_layers="12",
+                          freeze_decoder_layers=True,
+                          freeze_elements="attn_and_layer_norm",
+                          adversarial_nllloss=True,
+                          adversarial_kldivloss=True)
+    run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="residual_drop_at_4",
+                          encoder_drop_residual="3",
+                          freeze_decoder_layers=True,
+                          freeze_elements="attn_vqk",
+                          adversarial_nllloss=True,
+                          adversarial_kldivloss=True)
+    # make experiments with label smoothing with the best model
+    run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="normal_label_smoothing",
                           label_smoothing="0.1")
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="masked_label",
                           label_smoothing="0.1",
                           masked_labels=True)
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="residual_drop_at_4",
-                          encoder_drop_residual="3")
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="frozen_layers_8",
-                          freeze_encoder_layers="8")
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="frozen_encoder_decoder",
-                          freeze_encoder_layers="8",
-                          freeze_decoder_layers=True)
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="frozen_everything_except_attention_key_and_query",
-                          freeze_encoder_layers="12",
-                          freeze_decoder_layers=True)
-    # here combine best parameters
 
 
 if __name__ == "__main__":

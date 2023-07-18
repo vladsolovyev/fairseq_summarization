@@ -26,7 +26,7 @@ from fairseq.utils import FileContentsAction
 ###
 def get_time_gap(s, e):
     return (
-        datetime.datetime.fromtimestamp(e) - datetime.datetime.fromtimestamp(s)
+            datetime.datetime.fromtimestamp(e) - datetime.datetime.fromtimestamp(s)
     ).__str__()
 
 
@@ -37,6 +37,7 @@ def freeze_embeddings(model):
         for par in d.embed_tokens.parameters():
             par.requires_grad = False
     return model
+
 
 ###
 
@@ -82,11 +83,15 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                             help='keep language tokens in inference output (e.g. for analysis or debugging)')
         parser.add_argument("--freeze-embeddings", action="store_true", help="Freeze model embeddings", default=False)
         parser.add_argument("--freeze-decoder-layers", action="store_true", help="Freeze decoder layers", default=False)
-        parser.add_argument("--use-encoder-output-adapter", action="store_true", help="Use language adapter to encoder output", default=False)
+        parser.add_argument("--use-encoder-output-adapter", action="store_true",
+                            help="Use language adapter to encoder output", default=False)
         parser.add_argument('--freeze-encoder-layers', default=0, help="how many encoder layers should be frozen")
         parser.add_argument('--translate-to-lang', default="", help='translate to language')
         parser.add_argument("--append-src-tok", action="store_true", help="Append lang_tok to source", default=False)
-        parser.add_argument("--use-decoder-adapter", action="store_true", help="use decoder adapter layers", default=False)
+        parser.add_argument("--use-decoder-adapter", action="store_true", help="use decoder adapter layers",
+                            default=False)
+        parser.add_argument("--freeze-elements", choices=["everything", "attn_and_layer_norm", "attn_vqk"], type=str,
+                            default="everything", help="What elements of layers should be frozen")
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)
@@ -127,12 +132,12 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         tgt_dict = dicts[target_langs[0]]
         for src_lang in source_langs:
             assert (
-                src_dict == dicts[src_lang]
+                    src_dict == dicts[src_lang]
             ), "Diffrent dictionary are specified for different source languages; "
             "TranslationMultiSimpleEpochTask only supports one shared dictionary across all source languages"
         for tgt_lang in target_langs:
             assert (
-                tgt_dict == dicts[tgt_lang]
+                    tgt_dict == dicts[tgt_lang]
             ), "Diffrent dictionary are specified for different target languages; "
             "TranslationMultiSimpleEpochTask only supports one shared dictionary across all target languages"
 
@@ -211,11 +216,11 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         return dataset
 
     def build_generator(
-        self,
-        models,
-        args,
-        seq_gen_cls=None,
-        extra_gen_cls_kwargs=None,
+            self,
+            models,
+            args,
+            seq_gen_cls=None,
+            extra_gen_cls_kwargs=None,
     ):
         _, tgt_langtok_spec = self.args.langtoks["main"]
         if tgt_langtok_spec:
@@ -236,13 +241,28 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
             if args.freeze_embeddings:
                 freeze_embeddings(model)
             for layer in model.encoder.layers[:int(args.freeze_encoder_layers)]:
-                for par in layer.parameters():
-                    par.requires_grad = False
+                for par in layer.named_parameters():
+                    if args.freeze_elements == "everything":
+                        par[1].requires_grad = False
+                    elif args.freeze_elements == "attn_and_layer_norm":
+                        if "self_attn" not in par[0] and "layer_norm" not in par[0] and par[1].requires_grad:
+                            par[1].requires_grad = False
+                    elif args.freeze_elements == "attn_vqk":
+                        if "self_attn.v" not in par[0] and "self_attn.q" not in par[0] and "self_attn.k" not in par[0]\
+                                and par[1].requires_grad:
+                            par[1].requires_grad = False
             if args.freeze_decoder_layers:
                 for layer in model.decoder.layers:
                     for par in layer.named_parameters():
-                        if "encoder_attn.k" not in par[0] and "encoder_attn.q" not in par[0] and par[1].requires_grad:
+                        if args.freeze_elements == "everything":
                             par[1].requires_grad = False
+                        elif args.freeze_elements == "attn_and_layer_norm":
+                            if "encoder_attn" not in par[0] and "layer_norm" not in par[0] and par[1].requires_grad:
+                                par[1].requires_grad = False
+                        elif args.freeze_elements == "attn_vqk":
+                            if "encoder_attn.v" not in par[0] and "encoder_attn.q" not in par[0] and "encoder_attn.k" not in \
+                                    par[0] and par[1].requires_grad:
+                                par[1].requires_grad = False
         return model
 
     def valid_step(self, sample, model, criterion):
@@ -250,7 +270,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         return loss, sample_size, logging_output
 
     def inference_step(
-        self, generator, models, sample, prefix_tokens=None, constraints=None
+            self, generator, models, sample, prefix_tokens=None, constraints=None
     ):
         with torch.no_grad():
             _, tgt_langtok_spec = self.args.langtoks["main"]
@@ -281,13 +301,13 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         return self.data_manager.get_target_dictionary(self.target_langs[0])
 
     def create_batch_sampler_func(
-        self,
-        max_positions,
-        ignore_invalid_inputs,
-        max_tokens,
-        max_sentences,
-        required_batch_size_multiple=1,
-        seed=1,
+            self,
+            max_positions,
+            ignore_invalid_inputs,
+            max_tokens,
+            max_sentences,
+            required_batch_size_multiple=1,
+            seed=1,
     ):
         def construct_batch_sampler(dataset, epoch):
             splits = [
@@ -344,23 +364,23 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
 
     # we need to override get_batch_iterator because we want to reset the epoch iterator each time
     def get_batch_iterator(
-        self,
-        dataset,
-        max_tokens=None,
-        max_sentences=None,
-        max_positions=None,
-        ignore_invalid_inputs=False,
-        required_batch_size_multiple=1,
-        seed=1,
-        num_shards=1,
-        shard_id=0,
-        num_workers=0,
-        epoch=1,
-        data_buffer_size=0,
-        disable_iterator_cache=False,
-        skip_remainder_batch=False,
-        grouped_shuffling=False,
-        update_epoch_batch_itr=False,
+            self,
+            dataset,
+            max_tokens=None,
+            max_sentences=None,
+            max_positions=None,
+            ignore_invalid_inputs=False,
+            required_batch_size_multiple=1,
+            seed=1,
+            num_shards=1,
+            shard_id=0,
+            num_workers=0,
+            epoch=1,
+            data_buffer_size=0,
+            disable_iterator_cache=False,
+            skip_remainder_batch=False,
+            grouped_shuffling=False,
+            update_epoch_batch_itr=False,
     ):
         """
         Get an iterator that yields batches of data from the given dataset.
