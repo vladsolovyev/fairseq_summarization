@@ -29,6 +29,13 @@ def start_wikilingua_experiments(date):
                                adversarial_nllloss=True,
                                adversarial_kldivloss=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="frozen_except_attn_qk",
+                               freeze_encoder_layers="12",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_qk",
+                               adversarial_nllloss=True,
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_except_attn_and_layer_norm",
                                freeze_encoder_layers="12",
                                freeze_decoder_layers=True,
@@ -39,7 +46,7 @@ def start_wikilingua_experiments(date):
                                prefix="residual_drop_at_4",
                                encoder_drop_residual="3",
                                freeze_decoder_layers=True,
-                               freeze_elements="attn_vqk",
+                               freeze_elements="attn_qk",
                                adversarial_nllloss=True,
                                adversarial_kldivloss=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
@@ -87,6 +94,13 @@ def start_xlsum_experiments(date):
                           adversarial_nllloss=True,
                           adversarial_kldivloss=True)
     run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="frozen_except_attn_qk",
+                          freeze_encoder_layers="12",
+                          freeze_decoder_layers=True,
+                          freeze_elements="attn_qk",
+                          adversarial_nllloss=True,
+                          adversarial_kldivloss=True)
+    run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="frozen_except_attn_and_layer_norm",
                           freeze_encoder_layers="12",
                           freeze_decoder_layers=True,
@@ -97,7 +111,7 @@ def start_xlsum_experiments(date):
                           prefix="residual_drop_at_4",
                           encoder_drop_residual="3",
                           freeze_decoder_layers=True,
-                          freeze_elements="attn_vqk",
+                          freeze_elements="attn_qk",
                           adversarial_nllloss=True,
                           adversarial_kldivloss=True)
     # make experiments with label smoothing with the best model
