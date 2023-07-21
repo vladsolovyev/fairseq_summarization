@@ -252,8 +252,7 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                                 and par[1].requires_grad:
                             par[1].requires_grad = False
                     elif args.freeze_elements == "attn_qk":
-                        if "self_attn.q" not in par[0] and "self_attn.k" not in par[0]\
-                                and par[1].requires_grad:
+                        if "self_attn.q" not in par[0] and "self_attn.k" not in par[0] and par[1].requires_grad:
                             par[1].requires_grad = False
             if args.freeze_decoder_layers:
                 for layer in model.decoder.layers:
@@ -266,6 +265,9 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                         elif args.freeze_elements == "attn_vqk":
                             if "encoder_attn.v" not in par[0] and "encoder_attn.q" not in par[0] and "encoder_attn.k" not in \
                                     par[0] and par[1].requires_grad:
+                                par[1].requires_grad = False
+                        elif args.freeze_elements == "attn_qk":
+                            if "encoder_attn.q" not in par[0] and "encoder_attn.k" not in par[0] and par[1].requires_grad:
                                 par[1].requires_grad = False
         return model
 
