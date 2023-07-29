@@ -156,14 +156,13 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements=freeze_elements,
                                   use_adversarial_loss=True,
-                                  max_update="60000",
+                                  max_update="100000",
                                   validate=False,
                                   use_encoder_output_adapter=use_encoder_output_adapter,
                                   use_decoder_adapter=use_decoder_adapter,
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing,
                                   append_src_tok=False,
-                                  sampling="uniform",
                                   use_kldivloss=False)
 
         # evaluate supervised cases
@@ -197,14 +196,13 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements=freeze_elements,
                                   use_adversarial_loss=True,
-                                  max_update="60000",
+                                  max_update="100000",
                                   validate=False,
                                   use_encoder_output_adapter=use_encoder_output_adapter,
                                   use_decoder_adapter=use_decoder_adapter,
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing,
                                   append_src_tok=False,
-                                  sampling="uniform",
                                   use_kldivloss=True)
 
         # evaluate supervised cases

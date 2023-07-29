@@ -23,13 +23,13 @@ def train_summarization_model(data_dir,
                               freeze_elements="everything",
                               max_epoch=None,
                               append_src_tok=True,
-                              sampling_temperature="1.5",
+                              sampling_temperature="4",
                               label_smoothing="0.0",
                               use_kldivloss=True,
                               use_encoder_output_adapter=False,
                               use_decoder_adapter=False,
                               masked_labels=False,
-                              sampling="uniform"):
+                              sampling="temperature"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
