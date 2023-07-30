@@ -22,7 +22,7 @@ def main():
     filter_datasets()
     for dataset, lang in zip(datasets[1:], ["es", "ru", "gu"]):
         directory = "xlsum_{}_en".format(lang)
-        create_translated_data(dataset, directory, lang)
+        create_translated_data(dataset["test"]["text"], dataset["test"]["target"], directory, lang)
     statistics = dict()
     for language, dataset in zip(languages, datasets):
         for data_type in data_types:

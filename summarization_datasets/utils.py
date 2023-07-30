@@ -43,19 +43,17 @@ def encode_dataset_and_create_statistics(dataset_name, dataset, source_language,
     return dataset_statistics
 
 
-def create_translated_data(dataset, directory, source_lang):
+def create_translated_data(input, target, directory, source_lang):
     Path(directory).mkdir(exist_ok=True)
-    if source_lang == "en":
-        input_text = dataset["test"]["text"]
-    else:
-        input_text = translation_model.translate(dataset["test"]["text"],
-                                                 source_lang=source_lang,
-                                                 target_lang="en",
-                                                 show_progress_bar=True)
-    encoded_translated_input = spp.encode(input_text, out_type=str)
+    if source_lang != "en":
+        input = translation_model.translate(input,
+                                            source_lang=source_lang,
+                                            target_lang="en",
+                                            show_progress_bar=True)
+    encoded_translated_input = spp.encode(input, out_type=str)
     encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_translated_input]
     write_to_file(encoded_texts, "{}/test.input_text.en_XX".format(directory))
-    encoded_summary = spp.encode(dataset["test"]["target"], out_type=str)
+    encoded_summary = spp.encode(target, out_type=str)
     encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_summary]
     # it's actually not english, but has to have en_XX suffix for generation.
     # After generation, it will be translated into another language

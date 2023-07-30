@@ -26,8 +26,10 @@ def main():
             datasets_crosslingual + [dataset_es_ru, dataset_en_tr, dataset_tr_tr],
             ["es", "ru", "tr", "es", "en", "tr"],
             ["en", "en", "en", "ru", "tr", "tr"]):
+        filtered_dataset = dataset["test"].\
+            filter(lambda sample: sample["target_language"] == target_language and sample["source_language"] == source_language)
         directory = "wikilingua_{}_{}".format(source_language, target_language)
-        create_translated_data(dataset, directory, source_language)
+        create_translated_data(filtered_dataset["source"], filtered_dataset["target"], directory, source_language)
     for language, dataset in zip(crosslingual_languages, datasets_crosslingual):
         for data_type, new_data_type in zip(data_types, new_data_types):
             filtered_dataset = dataset[data_type]. \
