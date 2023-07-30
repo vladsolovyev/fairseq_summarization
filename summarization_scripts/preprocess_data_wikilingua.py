@@ -23,6 +23,10 @@ def main():
     for language in ["en_XX", "es_XX", "ru_RU"]:
         preprocess_data(language, language, "wikilingua_{}-{}".format(language, language),
                         "wikilingua", add_validation_data=True)
+    for source_language, translation_language in zip(["es", "ru", "tr", "es", "en", "tr"],
+                                                     ["en", "en", "en", "ru", "tr", "tr"]):
+        directory = "wikilingua_{}_{}".format(source_language, translation_language)
+        preprocess_data("en_XX", "en_XX", directory, directory, add_train_data=False, add_test_data=True)
 
 
 if __name__ == '__main__':

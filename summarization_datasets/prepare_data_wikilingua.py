@@ -1,8 +1,7 @@
 import pandas as pd
 from datasets import load_dataset
-from sentencepiece import SentencePieceProcessor
 
-from summarization_datasets.utils import encode_dataset_and_create_statistics
+from summarization_datasets.utils import encode_dataset_and_create_statistics, create_translated_data
 
 data_types = ["train", "sampled_validation", "test"]
 new_data_types = ["train", "validation", "test"]
@@ -19,11 +18,16 @@ datasets_crosslingual = [load_dataset("GEM/wiki_lingua", name="es_en", cache_dir
 dataset_es_ru = load_dataset("GEM/wiki_lingua", name="es_ru", cache_dir="./cache")
 dataset_en_tr = load_dataset("GEM/wiki_lingua", name="en_tr", cache_dir="./cache")
 dataset_tr_tr = load_dataset("GEM/wiki_lingua", name="tr", cache_dir="./cache")
-spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
 def main():
     statistics = dict()
+    for dataset, source_language, target_language in zip(
+            datasets_crosslingual + [dataset_es_ru, dataset_en_tr, dataset_tr_tr],
+            ["es", "ru", "tr", "es", "en", "tr"],
+            ["en", "en", "en", "ru", "tr", "tr"]):
+        directory = "wikilingua_{}_{}".format(source_language, target_language)
+        create_translated_data(dataset, directory, source_language)
     for language, dataset in zip(crosslingual_languages, datasets_crosslingual):
         for data_type, new_data_type in zip(data_types, new_data_types):
             filtered_dataset = dataset[data_type]. \
@@ -35,7 +39,8 @@ def main():
     for language, dataset in zip(mono_languages, datasets_monolingual):
         for data_type, new_data_type in zip(data_types[:2], new_data_types[:2]):
             statistics["{}-{}-{}".format(language, language, data_type)] = \
-                encode_dataset_and_create_statistics(dataset_name, dataset[data_type], language, language, new_data_type, columns)
+                encode_dataset_and_create_statistics(dataset_name, dataset[data_type], language, language,
+                                                     new_data_type, columns)
 
     for data_type, new_data_type in zip(data_types, new_data_types):
         filtered_dataset = dataset_es_ru[data_type]. \

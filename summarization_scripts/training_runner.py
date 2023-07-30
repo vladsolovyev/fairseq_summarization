@@ -20,7 +20,8 @@ def start_wikilingua_experiments(date):
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="base_model_with_adv",
                                adversarial_nllloss=True,
-                               adversarial_kldivloss=True)
+                               adversarial_kldivloss=True,
+                               add_translated_results=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_except_attn_and_layer_norm",
                                freeze_encoder_layers="12",

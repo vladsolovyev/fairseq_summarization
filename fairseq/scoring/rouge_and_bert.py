@@ -19,7 +19,8 @@ nltk.download("stopwords")
 translation_model = EasyNMT("mbart50_en2m", cache_folder="./cache")
 translation_to_mbart_language = dict({"es": "es_XX",
                                       "ru": "ru_RU",
-                                      "gu": "gu_IN"})
+                                      "gu": "gu_IN",
+                                      "tr": "tr_TR"})
 mbart_lang_to_rouge_lang = dict({"en_XX": "english",
                                  "es_XX": "spanish",
                                  "ru_RU": "russian",
@@ -95,7 +96,7 @@ class RougeBertScoreScorer(BaseScorer):
 
     def rouge_and_bert_score(self):
         print("number of samples: {}".format(len(self.pred)))
-        if self.cfg.translate_to_lang in languages[1:4]:
+        if self.cfg.translate_to_lang in languages[1:]:
             self.cfg.lang = translation_to_mbart_language[self.cfg.translate_to_lang]
             self.pred = translation_model.translate(self.pred,
                                                     source_lang="en",
