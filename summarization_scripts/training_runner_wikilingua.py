@@ -115,33 +115,6 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
             save_metrics(metrics, output_dir)
             free_memory()
 
-    # tune monolingual model using complete supervised data
-    for language_pair in language_pairs:
-        checkpoint_dir = "{}/wikilingua_all/{}-{}".format(output_dir, language_pair[0], language_pair[1])
-        train_summarization_model(data_dir="wikilingua",
-                                  lang_pairs="{}-{}".format(language_pair[0], language_pair[1]),
-                                  checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
-                                  save_dir=checkpoint_dir,
-                                  encoder_drop_residual=encoder_drop_residual,
-                                  use_encoder_output_adapter=use_encoder_output_adapter,
-                                  use_decoder_adapter=use_decoder_adapter,
-                                  masked_labels=masked_labels,
-                                  label_smoothing=label_smoothing)
-        free_memory()
-        metrics["{}_{}_mono_All".format(language_pair[0], language_pair[1])] = \
-            generate_and_evaluate_summaries(directory="wikilingua",
-                                            source_language=language_pair[0],
-                                            target_language=language_pair[1],
-                                            lang_pairs="{}-{}".format(language_pair[0], language_pair[1]),
-                                            checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
-                                            lenpen=lenpen,
-                                            min_len=min_len,
-                                            use_encoder_output_adapter=use_encoder_output_adapter,
-                                            use_decoder_adapter=use_decoder_adapter)
-        shutil.rmtree(checkpoint_dir)
-        save_metrics(metrics, output_dir)
-        free_memory()
-
     # Tune multilingual model using adversarial loss using nll
     if adversarial_nllloss:
         monolingual_adv_checkpoint_dir = "{}/monolingual_with_classifier_nll".format(output_dir)
@@ -258,34 +231,6 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                 save_metrics(metrics, output_dir)
                 free_memory()
 
-        # tune monolingual model using complete supervised data
-        for language_pair in language_pairs:
-            checkpoint_dir = "{}/wikilingua_all/{}-{}".format(output_dir, language_pair[0], language_pair[1])
-            train_summarization_model(data_dir="wikilingua",
-                                      lang_pairs="{}-{}".format(language_pair[0], language_pair[1]),
-                                      checkpoint="{}/checkpoint_last.pt".format(monolingual_adv_checkpoint_dir),
-                                      save_dir=checkpoint_dir,
-                                      encoder_drop_residual=encoder_drop_residual,
-                                      use_encoder_output_adapter=use_encoder_output_adapter,
-                                      use_decoder_adapter=use_decoder_adapter,
-                                      masked_labels=masked_labels,
-                                      label_smoothing=label_smoothing,
-                                      append_src_tok=False)
-            free_memory()
-            metrics["{}_{}_mono_adv_kldivloss_all".format(language_pair[0], language_pair[1])] = \
-                generate_and_evaluate_summaries(directory="wikilingua",
-                                                source_language=language_pair[0],
-                                                target_language=language_pair[1],
-                                                lang_pairs="{}-{}".format(language_pair[0], language_pair[1]),
-                                                checkpoint="{}/checkpoint_best.pt".format(checkpoint_dir),
-                                                lenpen=lenpen,
-                                                min_len=min_len,
-                                                use_encoder_output_adapter=use_encoder_output_adapter,
-                                                use_decoder_adapter=use_decoder_adapter,
-                                                append_src_tok=False)
-            shutil.rmtree(checkpoint_dir)
-            save_metrics(metrics, output_dir)
-            free_memory()
         shutil.rmtree(monolingual_adv_checkpoint_dir)
     shutil.rmtree(monolingual_checkpoint_dir)
 
