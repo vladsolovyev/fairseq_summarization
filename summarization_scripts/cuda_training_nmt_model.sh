@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python training_nmt_model.py
