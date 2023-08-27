@@ -185,6 +185,12 @@ class MultilingualDatasetManager(object):
             help="truncate source to max-source-positions",
         )
         parser.add_argument(
+            "--truncate-target",
+            action="store_true",
+            default=False,
+            help="truncate target to max-source-positions",
+        )
+        parser.add_argument(
             "--encoder-langtok",
             default=None,
             type=str,
@@ -541,6 +547,7 @@ class MultilingualDatasetManager(object):
         prepend_bos=False,
         load_alignments=False,
         truncate_source=False,
+        truncate_target=False
     ):
 
         src_datasets = []
@@ -584,6 +591,14 @@ class MultilingualDatasetManager(object):
                         max_source_positions - tokens_to_remove,
                     ),
                     src_dict.eos(),
+                )
+            if truncate_target:
+                tgt_dataset = AppendTokenDataset(
+                    TruncateDataset(
+                        StripTokenDataset(src_dataset, tgt_dict.eos()),
+                        max_source_positions - 3,
+                    ),
+                    tgt_dict.eos(),
                 )
             src_datasets.append(src_dataset)
             tgt_datasets.append(tgt_dataset)
@@ -642,6 +657,7 @@ class MultilingualDatasetManager(object):
         prepend_bos=False,
         load_alignments=False,
         truncate_source=False,
+        truncate_target=False,
         src_dataset_transform_func=lambda dataset: dataset,
         tgt_dataset_transform_func=lambda dataset: dataset,
         src_lang_id=None,
@@ -684,6 +700,7 @@ class MultilingualDatasetManager(object):
                 prepend_bos=prepend_bos,
                 load_alignments=load_alignments,
                 truncate_source=truncate_source,
+                truncate_target=truncate_target
             )
             src_dataset = src_dataset_transform_func(src_dataset)
             tgt_dataset = tgt_dataset_transform_func(tgt_dataset)
@@ -815,6 +832,7 @@ class MultilingualDatasetManager(object):
         max_target_positions = self.args.max_target_positions
         load_alignments = self.args.load_alignments
         truncate_source = self.args.truncate_source
+        truncate_target = self.args.truncate_target
         src_dataset_transform_func = self.src_dataset_tranform_func
         tgt_dataset_transform_func = self.tgt_dataset_tranform_func
         enable_lang_ids = self.args.enable_lang_ids
@@ -844,6 +862,7 @@ class MultilingualDatasetManager(object):
             prepend_bos,
             load_alignments,
             truncate_source,
+            truncate_target,
             src_dataset_transform_func=lambda dataset: src_dataset_transform_func(
                 src, tgt, dataset, src_langtok_spec
             ) if self.args.append_src_tok else dataset,
