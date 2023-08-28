@@ -49,7 +49,7 @@ class LanguageClassificationTransformerModel(BARTResidualDropModel):
             "--language-classifier-one-vs-rest",
             default=-1,
             type=int,
-            help="If non-zero, language classification will be binary (this class vs rest)",
+            help="If not -1, language classification will be binary (this class vs rest)",
         )
 
         parser.add_argument(

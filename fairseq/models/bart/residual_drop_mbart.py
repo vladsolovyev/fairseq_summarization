@@ -58,7 +58,8 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
     def __init__(self, args, dictionary, embed_tokens):
         super().__init__(args, dictionary, embed_tokens)
         self.use_encoder_output_adapter = args.use_encoder_output_adapter
-        self.lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
+        self.lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device),
+                               250021: tensor(2).to(device), 250023: tensor(3).to(device)})
         self.fc_language_adapter = nn.ModuleList()
         for i in range(len(self.lang_dict)):
             self.fc_language_adapter.append(nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim))

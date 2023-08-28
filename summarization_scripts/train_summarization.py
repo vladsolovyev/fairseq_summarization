@@ -29,7 +29,8 @@ def train_summarization_model(data_dir,
                               use_encoder_output_adapter=False,
                               use_decoder_adapter=False,
                               masked_labels=False,
-                              sampling="temperature"):
+                              sampling="temperature",
+                              num_language_to_classify="3"):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -88,7 +89,7 @@ def train_summarization_model(data_dir,
         sys.argv.extend(["--arch", "language_classification_transformer",
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
-                         "--num-language-to-classify", "3",
+                         "--num-language-to-classify", num_language_to_classify,
                          "--language-classifier-one-vs-rest", "-1"])
         if use_kldivloss:
             sys.argv.append("--use-kldivloss")

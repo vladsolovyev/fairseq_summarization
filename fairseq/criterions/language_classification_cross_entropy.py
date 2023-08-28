@@ -19,7 +19,8 @@ if torch.cuda.is_available():
     device = torch.device("cuda")
 else:
     device = torch.device("cpu")
-lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device), 250021: tensor(2).to(device)})
+lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device),
+                  250021: tensor(2).to(device), 250023: tensor(3).to(device)})
 
 
 def calcualte_encoder_output_loss(lprobs,
@@ -27,7 +28,7 @@ def calcualte_encoder_output_loss(lprobs,
                                   language_classifier_one_vs_rest=-1,
                                   use_kldivloss=False):
     if use_kldivloss:
-        num_classes = len(lang_dict) if language_classifier_one_vs_rest == -1 else 2
+        num_classes = lprobs.shape[1] if language_classifier_one_vs_rest == -1 else 2
         equal_probabilities = tensor(1 / num_classes).repeat(num_classes)
         equal_probabilities = F.log_softmax(equal_probabilities, -1)
         target_equal_probabilities = equal_probabilities.repeat(len(lprobs), 1).to(device)

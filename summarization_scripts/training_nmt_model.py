@@ -17,14 +17,15 @@ def train_nmt_models():
             language_pairs_3.append("{}-{}".format(languages[k], languages[i]))
     print(language_pairs_3)
 
-    for dir_name, language_pairs, freeze_decoder_layers, use_decoder_adapter, use_encoder_output_adapter in zip(
+    for dir_name, language_pairs, freeze_decoder_layers, use_decoder_adapter, \
+        use_encoder_output_adapter, num_language_to_classify in zip(
             ["3_langs", "4_langs", "3_langs_frozen_decoder", "4_langs_frozen_decoder",
              "4_langs_decoder_adapter", "4_langs_encoder_output_adapter"],
             [language_pairs_3, language_pairs_4, language_pairs_3, language_pairs_4, language_pairs_4, language_pairs_4],
             [False, False, True, True, False, False],
             [False, False, False, False, True, False],
-            [False, False, False, False, False, True]
-    ):
+            [False, False, False, False, False, True],
+            ["3", "4", "3", "4", "4", "4"]):
         checkpoint_dir = "translated_pretrained/{}".format(dir_name)
         train_summarization_model(data_dir="translated",
                                   lang_pairs=",".join(language_pairs),
@@ -46,7 +47,8 @@ def train_nmt_models():
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements="attn_and_layer_norm",
                                   use_decoder_adapter=use_decoder_adapter,
-                                  use_encoder_output_adapter=use_decoder_adapter)
+                                  use_encoder_output_adapter=use_decoder_adapter,
+                                  num_language_to_classify=num_language_to_classify)
 
         train_summarization_model(data_dir="translated",
                                   lang_pairs=",".join(language_pairs),
@@ -60,7 +62,8 @@ def train_nmt_models():
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements="attn_and_layer_norm",
                                   use_decoder_adapter=use_decoder_adapter,
-                                  use_encoder_output_adapter=use_decoder_adapter)
+                                  use_encoder_output_adapter=use_decoder_adapter,
+                                  num_language_to_classify=num_language_to_classify)
 
 
 if __name__ == "__main__":
