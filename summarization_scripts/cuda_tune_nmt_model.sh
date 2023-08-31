@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python tune_nmt_model_wikilingua.py
