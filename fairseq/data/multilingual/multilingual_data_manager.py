@@ -595,7 +595,7 @@ class MultilingualDatasetManager(object):
             if truncate_target:
                 tgt_dataset = AppendTokenDataset(
                     TruncateDataset(
-                        StripTokenDataset(src_dataset, tgt_dict.eos()),
+                        StripTokenDataset(tgt_dataset, tgt_dict.eos()),
                         max_source_positions - 3,
                     ),
                     tgt_dict.eos(),
