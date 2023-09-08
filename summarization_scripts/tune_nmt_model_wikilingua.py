@@ -30,11 +30,12 @@ def tune_nmt_models():
                                       lang_pairs="en_XX-en_XX",
                                       checkpoint="translated_pretrained/{}/{}{}".format(dir_name, checkpoint_dir, checkpoint_name),
                                       save_dir=model_dir,
-                                      freeze_encoder_layers="12",
+                                      freeze_encoder_layers=True,
                                       freeze_decoder_layers=True,
-                                      freeze_elements="attn_qk",
+                                      freeze_elements="attn_vqk",
                                       use_encoder_output_adapter=use_encoder_output_adapter,
-                                      use_decoder_adapter=use_decoder_adapter)
+                                      use_decoder_adapter=use_decoder_adapter,
+                                      freeze_adapters=True)
             free_memory()
             for language_pair in language_pairs:
                 metrics["{}_{}_en".format(language_pair[0], language_pair[1])] = \
@@ -56,11 +57,12 @@ def tune_nmt_models():
                                       lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:3]]),
                                       checkpoint="translated_pretrained/{}/{}{}".format(dir_name, checkpoint_dir, checkpoint_name),
                                       save_dir=model_dir,
-                                      freeze_encoder_layers="12",
+                                      freeze_encoder_layers=True,
                                       freeze_decoder_layers=True,
-                                      freeze_elements="attn_qk",
+                                      freeze_elements="attn_vqk",
                                       use_encoder_output_adapter=use_encoder_output_adapter,
-                                      use_decoder_adapter=use_decoder_adapter)
+                                      use_decoder_adapter=use_decoder_adapter,
+                                      freeze_adapters=True)
             free_memory()
             for language_pair in language_pairs:
                 metrics["{}_{}_multi".format(language_pair[0], language_pair[1])] = \

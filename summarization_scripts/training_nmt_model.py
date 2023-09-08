@@ -22,7 +22,7 @@ def train_nmt_models():
             ["3_langs", "4_langs", "3_langs_frozen_decoder", "4_langs_frozen_decoder",
              "4_langs_decoder_adapter", "4_langs_encoder_output_adapter"],
             [language_pairs_3, language_pairs_4, language_pairs_3, language_pairs_4, language_pairs_4, language_pairs_4],
-            [False, False, True, True, False, False],
+            [False, False, True, True, True, True],
             [False, False, False, False, True, False],
             [False, False, False, False, False, True],
             ["3", "4", "3", "4", "4", "4"]):

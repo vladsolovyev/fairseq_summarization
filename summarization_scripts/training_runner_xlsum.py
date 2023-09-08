@@ -35,10 +35,10 @@ def calculate_xlsum_baseline(output_dir=""):
 
 
 def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
-                          freeze_encoder_layers="0", adversarial_kldivloss=False,
+                          freeze_encoder_layers=False, adversarial_kldivloss=False,
                           adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0",
                           add_translated_results=False, freeze_decoder_layers=False,
-                          freeze_elements="everything"):
+                          freeze_elements="everything", freeze_embeddings=True):
     output_dir = "{}/{}".format(experiments_folder, prefix)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
@@ -53,6 +53,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
                               freeze_decoder_layers=freeze_decoder_layers,
+                              freeze_embeddings=freeze_embeddings,
                               freeze_elements=freeze_elements,
                               masked_labels=masked_labels,
                               label_smoothing=label_smoothing)
@@ -112,6 +113,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                       checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
                                       save_dir=checkpoint_dir,
                                       encoder_drop_residual=encoder_drop_residual,
+                                      freeze_embeddings=freeze_embeddings,
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
@@ -129,7 +131,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
-    shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
+    #shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
 
     # train using english, spanish and russian together and evaluate with all 4 languages
     checkpoint_dir = "{}/multiEnEsRu".format(output_dir)
@@ -139,6 +141,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
                               freeze_decoder_layers=freeze_decoder_layers,
+                              freeze_embeddings=freeze_embeddings,
                               freeze_elements=freeze_elements,
                               masked_labels=masked_labels,
                               label_smoothing=label_smoothing)
@@ -162,6 +165,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
                                   save_dir=checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
+                                  freeze_embeddings=freeze_embeddings,
                                   num_workers="1",
                                   validate=False,
                                   max_epoch=max_epoch,
@@ -181,7 +185,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
 
     # Tune multilingual model using adversarial loss using nllloss
     if adversarial_nllloss:
-        checkpoint_dir = "{}/multiEnEsRu_with_classifier".format(output_dir)
+        checkpoint_dir = "{}/multiEnEsRu_with_classifier_nll".format(output_dir)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs=",".join(
                                       ["{}-{}".format(language, language) for language in languages[:-1]]),
@@ -193,6 +197,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
                                   freeze_decoder_layers=freeze_decoder_layers,
+                                  freeze_embeddings=freeze_embeddings,
                                   freeze_elements=freeze_elements,
                                   append_src_tok=False,
                                   use_kldivloss=False,
@@ -211,11 +216,11 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                                 append_src_tok=False)
             save_metrics(metrics, output_dir)
             free_memory()
-        shutil.rmtree(checkpoint_dir)
+        #shutil.rmtree(checkpoint_dir)
 
     # Tune multilingual model using adversarial loss using kldivloss
     if adversarial_kldivloss:
-        checkpoint_dir = "{}/multiEnEsRu_with_classifier".format(output_dir)
+        checkpoint_dir = "{}/multiEnEsRu_with_classifier_kldiv".format(output_dir)
         train_summarization_model(data_dir="xlsum",
                                   lang_pairs=",".join(
                                       ["{}-{}".format(language, language) for language in languages[:-1]]),
@@ -227,6 +232,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
                                   freeze_decoder_layers=freeze_decoder_layers,
+                                  freeze_embeddings=freeze_embeddings,
                                   freeze_elements=freeze_elements,
                                   append_src_tok=False,
                                   use_kldivloss=True,
@@ -245,6 +251,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                                 append_src_tok=False)
             save_metrics(metrics, output_dir)
             free_memory()
+        """
         # few shot experiments. Tune multilingual model using few data from gujarati dataset
         for data_size, max_epoch in zip([10, 100, 1000], ["12", "6", "4"]):
             checkpoint_dir = "{}/multiEnEsRu_gujarati_{}".format(output_dir, data_size)
@@ -253,6 +260,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                       checkpoint="{}/multiEnEsRu_with_classifier/checkpoint_last.pt".format(output_dir),
                                       save_dir=checkpoint_dir,
                                       encoder_drop_residual=encoder_drop_residual,
+                                      freeze_embeddings=freeze_embeddings,
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
@@ -271,9 +279,10 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
             save_metrics(metrics, output_dir)
             shutil.rmtree(checkpoint_dir)
             free_memory()
-        shutil.rmtree("{}/multiEnEsRu_with_classifier".format(output_dir))
+        """
+        #shutil.rmtree(checkpoint_dir)
 
-    shutil.rmtree("{}/multiEnEsRu".format(output_dir))
+    #shutil.rmtree("{}/multiEnEsRu".format(output_dir))
 
 
 if __name__ == "__main__":

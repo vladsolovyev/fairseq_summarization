@@ -36,6 +36,8 @@ def freeze_embeddings(model):
             par.requires_grad = False
         for par in d.embed_tokens.parameters():
             par.requires_grad = False
+        for par in d.layernorm_embedding.parameters():
+            par.requires_grad = False
     return model
 
 
@@ -85,13 +87,15 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         parser.add_argument("--freeze-decoder-layers", action="store_true", help="Freeze decoder layers", default=False)
         parser.add_argument("--use-encoder-output-adapter", action="store_true",
                             help="Use language adapter to encoder output", default=False)
-        parser.add_argument('--freeze-encoder-layers', default=0, help="how many encoder layers should be frozen")
+        parser.add_argument('--freeze-encoder-layers', action="store_true", default=False,
+                            help="Freeze encoder layers")
         parser.add_argument('--translate-to-lang', default="", help='translate to language')
         parser.add_argument("--append-src-tok", action="store_true", help="Append lang_tok to source", default=False)
         parser.add_argument("--use-decoder-adapter", action="store_true", help="use decoder adapter layers",
                             default=False)
         parser.add_argument("--freeze-elements", choices=["everything", "attn_and_layer_norm", "attn_vqk", "attn_qk"],
                             type=str, default="everything", help="What elements of layers should be frozen")
+        parser.add_argument("--freeze-adapters", action="store_true", help="Freeze adapters", default=False)
 
         SamplingMethod.add_arguments(parser)
         MultilingualDatasetManager.add_args(parser)
@@ -240,21 +244,31 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         if self.training:
             if args.freeze_embeddings:
                 freeze_embeddings(model)
-            for layer in model.encoder.layers[:int(args.freeze_encoder_layers)]:
-                for par in layer.named_parameters():
-                    if args.freeze_elements == "everything":
-                        par[1].requires_grad = False
-                    elif args.freeze_elements == "attn_and_layer_norm":
-                        if "self_attn" not in par[0] and "layer_norm" not in par[0] and par[1].requires_grad:
+            if args.freeze_encoder_layers:
+                if args.freeze_elements in ["everything", "attn_vqk", "attn_qk"]:
+                    for par in model.encoder.layer_norm.parameters():
+                        par.requires_grad = False
+                for layer in model.encoder.layers:
+                    for par in layer.named_parameters():
+                        if args.freeze_elements == "everything":
                             par[1].requires_grad = False
-                    elif args.freeze_elements == "attn_vqk":
-                        if "self_attn.v" not in par[0] and "self_attn.q" not in par[0] and "self_attn.k" not in par[0]\
-                                and par[1].requires_grad:
-                            par[1].requires_grad = False
-                    elif args.freeze_elements == "attn_qk":
-                        if "self_attn.q" not in par[0] and "self_attn.k" not in par[0] and par[1].requires_grad:
-                            par[1].requires_grad = False
+                        elif args.freeze_elements == "attn_and_layer_norm":
+                            if "self_attn" not in par[0] and "layer_norm" not in par[0] and par[1].requires_grad:
+                                par[1].requires_grad = False
+                        elif args.freeze_elements == "attn_vqk":
+                            if "self_attn.v" not in par[0] and "self_attn.q" not in par[0] and "self_attn.k" not in par[0]\
+                                    and par[1].requires_grad:
+                                par[1].requires_grad = False
+                        elif args.freeze_elements == "attn_qk":
+                            if "self_attn.q" not in par[0] and "self_attn.k" not in par[0] and par[1].requires_grad:
+                                par[1].requires_grad = False
             if args.freeze_decoder_layers:
+                if args.freeze_elements in ["everything", "attn_vqk", "attn_qk"]:
+                    for par in model.decoder.layer_norm.parameters():
+                        par.requires_grad = False
+                if args.freeze_adapters:
+                    for par in model.decoder.fc_language_adapter.parameters():
+                        par.requires_grad = False
                 for layer in model.decoder.layers:
                     for par in layer.named_parameters():
                         if args.freeze_elements == "everything":
@@ -269,6 +283,9 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                         elif args.freeze_elements == "attn_qk":
                             if "encoder_attn.q" not in par[0] and "encoder_attn.k" not in par[0] and par[1].requires_grad:
                                 par[1].requires_grad = False
+                        if not args.freeze_adapters and "adapters" in par[0]:
+                            par[1].requires_grad = True
+
         return model
 
     def valid_step(self, sample, model, criterion):

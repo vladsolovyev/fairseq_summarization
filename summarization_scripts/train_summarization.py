@@ -14,12 +14,14 @@ def train_summarization_model(data_dir,
                               lang_pairs="en_XX-en_XX",
                               checkpoint="../summarization_datasets/mbart.cc25.v2/model.pt",
                               freeze_decoder_layers=False,
+                              freeze_adapters=False,
+                              freeze_embeddings=True,
                               encoder_drop_residual=None,
                               max_update="120000",
-                              freeze_encoder_layers="0",
                               num_workers="16",
                               use_adversarial_loss=False,
                               validate=True,
+                              freeze_encoder_layers=False,
                               freeze_elements="everything",
                               max_epoch=None,
                               append_src_tok=True,
@@ -74,17 +76,22 @@ def train_summarization_model(data_dir,
          "--ddp-backend", "no_c10d",
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
-         "--freeze-embeddings",
-         "--freeze-encoder-layers", freeze_encoder_layers,
          "--freeze-elements", freeze_elements,
          "--label-smoothing", label_smoothing]
     )
+    if freeze_encoder_layers:
+        sys.argv.append("--freeze-encoder-layers")
     if freeze_decoder_layers:
         sys.argv.append("--freeze-decoder-layers")
+    if freeze_adapters:
+        sys.argv.append("--freeze-adapters")
+    if freeze_embeddings:
+        sys.argv.append("--freeze-embeddings")
     if encoder_drop_residual:
         sys.argv.extend(["--encoder-drop-residual", encoder_drop_residual])
     if torch.cuda.is_available():
-        sys.argv.append("--fp16")
+        sys.argv.extend(["--fp16",
+                         "--fp16-scale-tolerance", "0.1"])
     if use_adversarial_loss:
         sys.argv.extend(["--arch", "language_classification_transformer",
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",

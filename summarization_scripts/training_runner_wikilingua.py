@@ -6,8 +6,8 @@ from summarization_scripts.train_summarization import train_summarization_model
 from summarization_scripts.utils import free_memory, save_metrics
 
 languages = ["en_XX", "es_XX", "ru_RU", "tr_TR"]
-language_pairs_evaluation = [("es_XX", "en_XX"), ("ru_RU", "en_XX"), ("tr_TR", "en_XX"),
-                             ("es_XX", "ru_RU"), ("en_XX", "tr_TR"), ("tr_TR", "tr_TR")]
+language_pairs = [("es_XX", "en_XX"), ("ru_RU", "en_XX"), ("tr_TR", "en_XX"),
+                  ("es_XX", "ru_RU"), ("en_XX", "tr_TR"), ("tr_TR", "tr_TR")]
 lenpen = "1.0"
 min_len = "10"
 
@@ -20,10 +20,10 @@ def calculate_wikilingua_baseline(output_dir=""):
     checkpoint_dir = "{}/baseline".format(output_dir)
     train_summarization_model(data_dir="wikilingua",
                               lang_pairs=",".join(["{}-{}".format(language_pair[0], language_pair[1])
-                                                   for language_pair in language_pairs_evaluation]),
+                                                   for language_pair in language_pairs]),
                               save_dir=checkpoint_dir)
     free_memory()
-    for language_pair in language_pairs_evaluation:
+    for language_pair in language_pairs:
         metrics["{}_{}_baseline".format(language_pair[0], language_pair[1])] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language_pair[0],
@@ -38,15 +38,15 @@ def calculate_wikilingua_baseline(output_dir=""):
 
 
 def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder="", prefix="",
-                               freeze_encoder_layers="0", use_encoder_output_adapter=False,
+                               freeze_encoder_layers=False, use_encoder_output_adapter=False,
                                use_decoder_adapter=False, adversarial_kldivloss=False,
                                adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0",
                                freeze_decoder_layers=False, freeze_elements="everything",
-                               add_translated_results=False):
+                               add_translated_results=False, freeze_embeddings=True):
     if use_encoder_output_adapter or use_decoder_adapter:
-        language_pairs = language_pairs_evaluation[:4]
+        num_languages = 4
     else:
-        language_pairs = language_pairs_evaluation
+        num_languages = 3
     output_dir = "{}/{}".format(experiments_folder, prefix)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
@@ -54,13 +54,14 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
     metrics = dict()
 
     # train using only monolingual english data
-    monolingual_checkpoint_dir = "{}/monolingual".format(output_dir)
+    monolingual_checkpoint_dir = "{}/monolingual_en".format(output_dir)
     train_summarization_model(data_dir="wikilingua",
                               lang_pairs="en_XX-en_XX",
                               save_dir=monolingual_checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
                               freeze_decoder_layers=freeze_decoder_layers,
+                              freeze_embeddings=freeze_embeddings,
                               freeze_elements=freeze_elements,
                               use_encoder_output_adapter=use_encoder_output_adapter,
                               use_decoder_adapter=use_decoder_adapter,
@@ -93,7 +94,8 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                                      source_language="en_XX",
                                                      target_language="en_XX",
                                                      lang_pairs="en_XX-en_XX",
-                                                     checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
+                                                     checkpoint="{}/checkpoint_best.pt".format(
+                                                         monolingual_checkpoint_dir),
                                                      lenpen=lenpen)
             metrics["{}_en_translated".format(source_language)] = result
             translation_metrics["{}_en_translated".format(source_language)] = result
@@ -101,13 +103,14 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
             save_metrics(translation_metrics, experiments_folder)
             free_memory()
         for source_language, translation_language in zip(["es", "en", "tr"], ["ru", "tr", "tr"]):
-            result = generate_and_evaluate_summaries(directory="wikilingua_{}_{}".format(source_language, translation_language),
-                                                     source_language="en_XX",
-                                                     target_language="en_XX",
-                                                     lang_pairs="en_XX-en_XX",
-                                                     checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
-                                                     lenpen=lenpen,
-                                                     translate_to_lang=translation_language)
+            result = generate_and_evaluate_summaries(
+                directory="wikilingua_{}_{}".format(source_language, translation_language),
+                source_language="en_XX",
+                target_language="en_XX",
+                lang_pairs="en_XX-en_XX",
+                checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
+                lenpen=lenpen,
+                translate_to_lang=translation_language)
             metrics["{}_{}_translated".format(source_language, translation_language)] = result
             translation_metrics["{}_{}_translated".format(source_language, translation_language)] = result
             save_metrics(metrics, output_dir)
@@ -126,6 +129,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                       checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                       save_dir=checkpoint_dir,
                                       encoder_drop_residual=encoder_drop_residual,
+                                      freeze_embeddings=freeze_embeddings,
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
@@ -147,16 +151,17 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
             shutil.rmtree(checkpoint_dir)
             save_metrics(metrics, output_dir)
             free_memory()
-    shutil.rmtree(monolingual_checkpoint_dir)
+    #shutil.rmtree(monolingual_checkpoint_dir)
 
     # train using english, spanish, russian data together, but monolingual data
-    monolingual_checkpoint_dir = "{}/monolingual".format(output_dir)
+    monolingual_checkpoint_dir = "{}/monolingual_multi".format(output_dir)
     train_summarization_model(data_dir="wikilingua",
-                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:3]]),
+                              lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:num_languages]]),
                               save_dir=monolingual_checkpoint_dir,
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
                               freeze_decoder_layers=freeze_decoder_layers,
+                              freeze_embeddings=freeze_embeddings,
                               freeze_elements=freeze_elements,
                               use_encoder_output_adapter=use_encoder_output_adapter,
                               use_decoder_adapter=use_decoder_adapter,
@@ -190,6 +195,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                       checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                       save_dir=checkpoint_dir,
                                       encoder_drop_residual=encoder_drop_residual,
+                                      freeze_embeddings=freeze_embeddings,
                                       num_workers="1",
                                       validate=False,
                                       max_epoch=max_epoch,
@@ -217,12 +223,13 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
         monolingual_adv_checkpoint_dir = "{}/monolingual_with_classifier_nll".format(output_dir)
         train_summarization_model(data_dir="wikilingua",
                                   lang_pairs=",".join(
-                                      ["{}-{}".format(language, language) for language in languages[:3]]),
+                                      ["{}-{}".format(language, language) for language in languages[:num_languages]]),
                                   checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                   save_dir=monolingual_adv_checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
                                   freeze_decoder_layers=freeze_decoder_layers,
+                                  freeze_embeddings=freeze_embeddings,
                                   freeze_elements=freeze_elements,
                                   use_adversarial_loss=True,
                                   max_update="100000",
@@ -232,7 +239,8 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing,
                                   append_src_tok=False,
-                                  use_kldivloss=False)
+                                  use_kldivloss=False,
+                                  num_language_to_classify=str(num_languages))
 
         # evaluate supervised cases
         for language_pair in language_pairs:
@@ -250,19 +258,20 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                                 append_src_tok=False)
             save_metrics(metrics, output_dir)
             free_memory()
-        shutil.rmtree(monolingual_adv_checkpoint_dir)
+        #shutil.rmtree(monolingual_adv_checkpoint_dir)
 
     # Tune multilingual model using adversarial loss using kldivloss
     if adversarial_kldivloss:
         monolingual_adv_checkpoint_dir = "{}/monolingual_with_classifier_kldivloss".format(output_dir)
         train_summarization_model(data_dir="wikilingua",
                                   lang_pairs=",".join(
-                                      ["{}-{}".format(language, language) for language in languages[:3]]),
+                                      ["{}-{}".format(language, language) for language in languages[:num_languages]]),
                                   checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                                   save_dir=monolingual_adv_checkpoint_dir,
                                   encoder_drop_residual=encoder_drop_residual,
                                   freeze_encoder_layers=freeze_encoder_layers,
                                   freeze_decoder_layers=freeze_decoder_layers,
+                                  freeze_embeddings=freeze_embeddings,
                                   freeze_elements=freeze_elements,
                                   use_adversarial_loss=True,
                                   max_update="100000",
@@ -272,7 +281,8 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                   masked_labels=masked_labels,
                                   label_smoothing=label_smoothing,
                                   append_src_tok=False,
-                                  use_kldivloss=True)
+                                  use_kldivloss=True,
+                                  num_language_to_classify=str(num_languages))
 
         # evaluate supervised cases
         for language_pair in language_pairs:
@@ -291,6 +301,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
             save_metrics(metrics, output_dir)
             free_memory()
 
+        """
         # few shot experiments.
         # Tune monolingual model using few supervised data
         for language_pair in language_pairs:
@@ -304,6 +315,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                           checkpoint="{}/checkpoint_last.pt".format(monolingual_adv_checkpoint_dir),
                                           save_dir=checkpoint_dir,
                                           encoder_drop_residual=encoder_drop_residual,
+                                          freeze_embeddings=freeze_embeddings,
                                           num_workers="1",
                                           validate=False,
                                           max_epoch=max_epoch,
@@ -327,9 +339,10 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                 shutil.rmtree(checkpoint_dir)
                 save_metrics(metrics, output_dir)
                 free_memory()
+        """
 
-        shutil.rmtree(monolingual_adv_checkpoint_dir)
-    shutil.rmtree(monolingual_checkpoint_dir)
+        #shutil.rmtree(monolingual_adv_checkpoint_dir)
+    #shutil.rmtree(monolingual_checkpoint_dir)
 
 
 if __name__ == "__main__":
