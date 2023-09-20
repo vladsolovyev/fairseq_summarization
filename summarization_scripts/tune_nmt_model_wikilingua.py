@@ -32,7 +32,7 @@ def tune_nmt_models():
                                       save_dir=model_dir,
                                       freeze_encoder_layers=True,
                                       freeze_decoder_layers=True,
-                                      freeze_elements="attn_vqk",
+                                      freeze_elements="attn_qk",
                                       use_encoder_output_adapter=use_encoder_output_adapter,
                                       use_decoder_adapter=use_decoder_adapter,
                                       freeze_adapters=True)
@@ -59,7 +59,7 @@ def tune_nmt_models():
                                       save_dir=model_dir,
                                       freeze_encoder_layers=True,
                                       freeze_decoder_layers=True,
-                                      freeze_elements="attn_vqk",
+                                      freeze_elements="attn_qk",
                                       use_encoder_output_adapter=use_encoder_output_adapter,
                                       use_decoder_adapter=use_decoder_adapter,
                                       freeze_adapters=True)
