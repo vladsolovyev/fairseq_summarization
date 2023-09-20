@@ -5,13 +5,15 @@ languages = ["en_XX", "es_XX", "ru_RU", "tr_TR"]
 
 def train_nmt_models():
     language_pairs_4 = list()
-    for i in range(len(languages))[:-1]:
+    for i in range(len(languages)):
+        language_pairs_4.append("{}-{}".format(languages[i], languages[i]))
         for k in range(len(languages))[i + 1:]:
             language_pairs_4.append("{}-{}".format(languages[i], languages[k]))
             language_pairs_4.append("{}-{}".format(languages[k], languages[i]))
     print(language_pairs_4)
     language_pairs_3 = list()
-    for i in range(len(languages))[:-2]:
+    for i in range(len(languages))[:-1]:
+        language_pairs_3.append("{}-{}".format(languages[i], languages[i]))
         for k in range(len(languages))[i + 1:-1]:
             language_pairs_3.append("{}-{}".format(languages[i], languages[k]))
             language_pairs_3.append("{}-{}".format(languages[k], languages[i]))
