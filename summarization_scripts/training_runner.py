@@ -27,13 +27,11 @@ def start_wikilingua_experiments(date):
                                freeze_embeddings=False)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_except_attn_and_layer_norm",
-                               freeze_encoder_layers=True,
                                freeze_decoder_layers=True,
                                freeze_elements="attn_and_layer_norm",
                                adversarial_kldivloss=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_except_attn_vqk",
-                               freeze_encoder_layers=True,
                                freeze_decoder_layers=True,
                                freeze_elements="attn_vqk",
                                adversarial_kldivloss=True)
@@ -67,7 +65,6 @@ def start_wikilingua_experiments(date):
                                adversarial_kldivloss=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_except_attn_qk",
-                               freeze_encoder_layers=True,
                                freeze_decoder_layers=True,
                                freeze_elements="attn_qk",
                                adversarial_kldivloss=True)
