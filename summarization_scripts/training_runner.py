@@ -26,6 +26,16 @@ def start_wikilingua_experiments(date):
                                prefix="unfrozen_embeddings",
                                freeze_embeddings=False)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="frozen_decoder",
+                               freeze_decoder_layers=True,
+                               freeze_elements="everything",
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
+                               prefix="frozen_except_attn_qk",
+                               freeze_decoder_layers=True,
+                               freeze_elements="attn_qk",
+                               adversarial_kldivloss=True)
+    run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="frozen_except_attn_and_layer_norm",
                                freeze_decoder_layers=True,
                                freeze_elements="attn_and_layer_norm",
@@ -63,11 +73,6 @@ def start_wikilingua_experiments(date):
                                label_smoothing="0.1",
                                masked_labels=True,
                                adversarial_kldivloss=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_except_attn_qk",
-                               freeze_decoder_layers=True,
-                               freeze_elements="attn_qk",
-                               adversarial_kldivloss=True)
 
 
 def start_xlsum_experiments(date):
@@ -84,6 +89,17 @@ def start_xlsum_experiments(date):
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="unfrozen_embeddings",
                           freeze_embeddings=False)
+    run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="frozen_decoder",
+                          freeze_decoder_layers=True,
+                          freeze_elements="everything",
+                          adversarial_kldivloss=True)
+    run_xlsum_experiments(experiments_folder=experiments_folder,
+                          prefix="frozen_except_attn_qk",
+                          freeze_encoder_layers=True,
+                          freeze_decoder_layers=True,
+                          freeze_elements="attn_qk",
+                          adversarial_kldivloss=True)
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="frozen_except_attn_and_layer_norm",
                           freeze_encoder_layers=True,
@@ -115,12 +131,6 @@ def start_xlsum_experiments(date):
                           freeze_elements="attn_vqk",
                           label_smoothing="0.1",
                           masked_labels=True)
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="frozen_except_attn_qk",
-                          freeze_encoder_layers=True,
-                          freeze_decoder_layers=True,
-                          freeze_elements="attn_qk",
-                          adversarial_kldivloss=True)
 
 
 if __name__ == "__main__":
