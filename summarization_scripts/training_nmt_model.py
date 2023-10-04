@@ -35,7 +35,7 @@ def train_nmt_models():
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements="attn_and_layer_norm",
                                   use_decoder_adapter=use_decoder_adapter,
-                                  use_encoder_output_adapter=use_decoder_adapter)
+                                  use_encoder_output_adapter=use_encoder_output_adapter)
 
         train_summarization_model(data_dir="translated",
                                   lang_pairs=",".join(language_pairs),
@@ -49,7 +49,7 @@ def train_nmt_models():
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements="attn_and_layer_norm",
                                   use_decoder_adapter=use_decoder_adapter,
-                                  use_encoder_output_adapter=use_decoder_adapter,
+                                  use_encoder_output_adapter=use_encoder_output_adapter,
                                   num_language_to_classify=num_language_to_classify)
 
         train_summarization_model(data_dir="translated",
@@ -64,7 +64,7 @@ def train_nmt_models():
                                   freeze_decoder_layers=freeze_decoder_layers,
                                   freeze_elements="attn_and_layer_norm",
                                   use_decoder_adapter=use_decoder_adapter,
-                                  use_encoder_output_adapter=use_decoder_adapter,
+                                  use_encoder_output_adapter=use_encoder_output_adapter,
                                   num_language_to_classify=num_language_to_classify)
 
 
