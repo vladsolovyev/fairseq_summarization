@@ -62,7 +62,7 @@ def start_wikilingua_experiments(date):
                                label_smoothing="0.1",
                                masked_labels=True,
                                adversarial_kldivloss=True)
-    run_wikilingua_experiments_with_adapters()
+    run_wikilingua_experiments_with_adapters(experiments_folder=experiments_folder)
 
 
 def start_xlsum_experiments(date):
