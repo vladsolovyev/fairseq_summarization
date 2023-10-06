@@ -16,11 +16,7 @@ def map_datasets(mono_dataset, cross_dataset):
     input_texts_keys = set(input_texts.keys())
     summaries_input = [input_texts[cross_sample["source"]] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
     summaries_output = [cross_sample["target"] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
-    summaries = dict(zip(mono_dataset["target"], mono_dataset["source"]))
-    summaries_keys = set(summaries.keys())
-    input_texts_input = [summaries[cross_sample["target"]] for cross_sample in cross_dataset if cross_sample["target"] in summaries_keys]
-    input_texts_output = [cross_sample["source"] for cross_sample in cross_dataset if cross_sample["target"] in summaries_keys]
-    return summaries_input + input_texts_input, summaries_output + input_texts_output
+    return summaries_input, summaries_output
 
 
 def parse_datasets(mono_dataset, cross_dataset):
@@ -33,19 +29,11 @@ def parse_datasets(mono_dataset, cross_dataset):
     return train_input, train_output, validation_input, validation_output
 
 
-def parse_mono_datasets(mono_dataset):
-    train_mono_dataset = mono_dataset["train"]
-    train_data = train_mono_dataset["source"] + train_mono_dataset["target"]
-    validation_mono_dataset = mono_dataset["sampled_validation"]
-    validation_data = validation_mono_dataset["source"] + validation_mono_dataset["target"]
-    return train_data, validation_data
-
-
 def main():
     statistics = dict()
     for i in range(len(languages)):
         mono_dataset = load_dataset("GEM/wiki_lingua", languages[i], cache_dir="./cache")
-        train_data, validation_data = parse_mono_datasets(mono_dataset)
+        train_data, validation_data = mono_dataset["train"]["target"], mono_dataset["sampled_validation"]["target"]
         print("{}-{}-{}".format(languages[i], len(train_data), len(validation_data)))
         statistics["{}_train".format(languages[i])] = len(train_data)
         statistics["{}_valid".format(languages[i])] = len(validation_data)
