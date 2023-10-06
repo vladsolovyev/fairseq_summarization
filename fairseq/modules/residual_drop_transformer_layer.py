@@ -4,14 +4,18 @@ import torch
 from torch import Tensor
 
 from fairseq.modules import TransformerEncoderLayer
+from fairseq.modules.quantization.multilingual_adapter import MultilingualAdapter
 
 
 class ResidualDropTransformerEncoderLayer(TransformerEncoderLayer):
-    def __init__(self, args, drop_residual_after_att=False):
+    def __init__(self, args, lang_dict, num_languages, drop_residual_after_att=False):
         super().__init__(args)
         self.drop_residual_after_att = drop_residual_after_att
+        if args.use_encoder_adapter == "src_lang_id" or args.use_encoder_adapter == "tgt_lang_id":
+            self.lang_dict = lang_dict
+            self.adapters = MultilingualAdapter(args, args.decoder_embed_dim, num_languages)
 
-    def forward(self, x, encoder_padding_mask: Optional[Tensor], attn_mask: Optional[Tensor] = None):
+    def forward(self, x, encoder_padding_mask: Optional[Tensor], attn_mask: Optional[Tensor] = None, lang_id=None):
         """
         Args:
             x (Tensor): input to the layer of shape `(seq_len, batch, embed_dim)`
@@ -57,4 +61,7 @@ class ResidualDropTransformerEncoderLayer(TransformerEncoderLayer):
         x = self.residual_connection(x, residual)
         if not self.normalize_before:
             x = self.final_layer_norm(x)
+        if lang_id is not None and\
+                (self.args.use_encoder_adapter == "src_lang_id" or self.args.use_encoder_adapter == "tgt_lang_id"):
+            x = self.adapters(x, self.lang_dict[lang_id[0].item()])
         return x

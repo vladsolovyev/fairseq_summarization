@@ -1179,7 +1179,7 @@ class MultilingualDatasetManager(object):
         if training and split == getattr(self.args, "train_subset", None):
             sample_ratios = self.get_sampling_ratios(data_param_list, datasets, epoch)
         collate_format = CollateFormat.single
-        if self.args.use_encoder_output_adapter or self.args.use_decoder_adapter:
+        if self.args.use_encoder_output_adapter or self.args.use_decoder_adapter or self.args.use_encoder_adapter:
             collate_format = CollateFormat.ordered_dict
         return SampledMultiDataset(
             OrderedDict(datasets),

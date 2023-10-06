@@ -1,6 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
+from summarization_scripts.training_runner_adapters import run_wikilingua_experiments_with_adapters
 from summarization_scripts.training_runner_wikilingua import run_wikilingua_experiments, calculate_wikilingua_baseline
 from summarization_scripts.training_runner_xlsum import run_xlsum_experiments, calculate_xlsum_baseline
 
@@ -51,18 +52,6 @@ def start_wikilingua_experiments(date):
                                freeze_decoder_layers=True,
                                freeze_elements="attn_vqk",
                                adversarial_kldivloss=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="decoder_adapter",
-                               use_decoder_adapter=True,
-                               freeze_decoder_layers=True,
-                               freeze_elements="attn_and_layer_norm",
-                               adversarial_kldivloss=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="encoder_output_adapter",
-                               use_encoder_output_adapter=True,
-                               freeze_decoder_layers=True,
-                               freeze_elements="attn_and_layer_norm",
-                               adversarial_kldivloss=True)
     # make experiments with label smoothing with the best model
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="normal_label_smoothing",
@@ -73,6 +62,7 @@ def start_wikilingua_experiments(date):
                                label_smoothing="0.1",
                                masked_labels=True,
                                adversarial_kldivloss=True)
+    run_wikilingua_experiments_with_adapters()
 
 
 def start_xlsum_experiments(date):

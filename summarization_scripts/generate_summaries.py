@@ -17,7 +17,8 @@ def generate_and_evaluate_summaries(directory,
                                     rouge_scorer="huggingface",
                                     append_src_tok=True,
                                     use_encoder_output_adapter=False,
-                                    use_decoder_adapter=False):
+                                    use_decoder_adapter=False,
+                                    use_encoder_adapter="no"):
     sys.argv.extend(
         [directory,
          "--path", checkpoint,
@@ -46,7 +47,8 @@ def generate_and_evaluate_summaries(directory,
          "--no-repeat-ngram-size", ngram,
          "--prefix-size", "1",
          "--translate-to-lang", translate_to_lang,
-         "--rouge-scorer", rouge_scorer]
+         "--rouge-scorer", rouge_scorer,
+         "--use-encoder-adapter", use_encoder_adapter]
     )
     if torch.cuda.is_available():
         sys.argv.append("--fp16")

@@ -86,11 +86,17 @@ class BARTModel(TransformerModel):
         if classification_head_name is not None:
             features_only = True
 
+        lang_id = None
+        if self.args.use_encoder_adapter == "src_lang_id":
+            lang_id = src_lang_id
+        elif self.args.use_encoder_adapter == "tgt_lang_id":
+            lang_id = tgt_lang_id
         encoder_out = self.encoder(
             src_tokens,
             src_lengths=src_lengths,
             token_embeddings=token_embeddings,
             return_all_hiddens=return_all_hiddens,
+            lang_id=lang_id
         )
         x, extra = self.decoder(
             prev_output_tokens,

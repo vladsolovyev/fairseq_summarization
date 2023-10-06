@@ -93,6 +93,8 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
         parser.add_argument("--append-src-tok", action="store_true", help="Append lang_tok to source", default=False)
         parser.add_argument("--use-decoder-adapter", action="store_true", help="use decoder adapter layers",
                             default=False)
+        parser.add_argument("--use-encoder-adapter", choices=["no", "src_lang_id", "tgt_lang_id"],
+                            type=str, default="no", help="Should encoder adapters be used")
         parser.add_argument("--freeze-elements", choices=["everything", "attn_and_layer_norm", "attn_vqk", "attn_qk"],
                             type=str, default="everything", help="What elements of layers should be frozen")
         parser.add_argument("--freeze-adapters", action="store_true", help="Freeze adapters", default=False)
@@ -262,6 +264,8 @@ class TranslationMultiSimpleEpochTask(LegacyFairseqTask):
                         elif args.freeze_elements == "attn_qk":
                             if "self_attn.q" not in par[0] and "self_attn.k" not in par[0] and par[1].requires_grad:
                                 par[1].requires_grad = False
+                        if not args.freeze_adapters and "adapters" in par[0]:
+                            par[1].requires_grad = True
             if args.freeze_decoder_layers:
                 if args.freeze_elements in ["everything", "attn_vqk", "attn_qk"]:
                     for par in model.decoder.layer_norm.parameters():

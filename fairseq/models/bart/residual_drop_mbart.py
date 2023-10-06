@@ -30,42 +30,50 @@ class BARTResidualDropModel(BARTModel):
         )
 
     @classmethod
+    def lang_dict(cls):
+        return dict({250004: tensor(0).to(device), 250005: tensor(1).to(device),
+                     250021: tensor(2).to(device), 250023: tensor(3).to(device)})
+
+    @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        return ResidualDropTransformerEncoder(args, src_dict, embed_tokens)
+        return ResidualDropTransformerEncoder(args, src_dict, embed_tokens, cls.lang_dict())
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
-        return ResidualDropTransformerDecoder(args, tgt_dict, embed_tokens)
+        return ResidualDropTransformerDecoder(args, tgt_dict, embed_tokens, cls.lang_dict())
 
     def load_state_dict(self, state_dict, strict=True, model_cfg=None, args=None, ):
         return super().load_state_dict(state_dict, strict=False)
 
 
 class ResidualDropTransformerEncoder(TransformerEncoder):
-    def __init__(self, args, dictionary, embed_tokens):
+    def __init__(self, args, dictionary, embed_tokens, lang_dict):
         super().__init__(args, dictionary, embed_tokens)
 
         self.layers = nn.ModuleList(
-            [self._build_encoder_layer(args, idx, args.encoder_drop_residual) for idx in range(args.encoder_layers)]
+            [self._build_encoder_layer(args, idx, lang_dict, args.encoder_drop_residual) for idx in range(args.encoder_layers)]
         )
 
-    def _build_encoder_layer(self, args, layer_idx, encoder_drop_residual_at_layer=None):
+    def _build_encoder_layer(self, args, layer_idx, lang_dict, encoder_drop_residual_at_layer=None):
         drop_residual_after_att = (layer_idx == encoder_drop_residual_at_layer)
-        return ResidualDropTransformerEncoderLayer(args, drop_residual_after_att)
+        return ResidualDropTransformerEncoderLayer(args, lang_dict, len(lang_dict), drop_residual_after_att)
 
 
 class ResidualDropTransformerDecoder(TransformerDecoder):
-    def __init__(self, args, dictionary, embed_tokens):
+    def __init__(self, args, dictionary, embed_tokens, lang_dict):
         super().__init__(args, dictionary, embed_tokens)
         self.use_encoder_output_adapter = args.use_encoder_output_adapter
-        self.lang_dict = dict({250004: tensor(0).to(device), 250005: tensor(1).to(device),
-                               250021: tensor(2).to(device), 250023: tensor(3).to(device)})
+        self.lang_dict = lang_dict
         self.fc_language_adapter = nn.ModuleList()
         for i in range(len(self.lang_dict)):
-            self.fc_language_adapter.append(nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim))
+            adapter = nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim)
+            nn.init.eye_(adapter.weight)
+            adapter.bias.data.fill_(0)
+            self.fc_language_adapter.append(adapter)
         self.dropout = FairseqDropout(args.dropout, module_name=self.__class__.__name__)
         self.layers = nn.ModuleList(
-            [AdapterTransformerDecoderLayer(args, len(self.lang_dict), self.lang_dict) for i in range(args.decoder_layers)]
+            [AdapterTransformerDecoderLayer(args, len(lang_dict), lang_dict) for i in
+             range(args.decoder_layers)]
         )
 
     def extract_features_scriptable(

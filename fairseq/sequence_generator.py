@@ -276,6 +276,10 @@ class SequenceGenerator(nn.Module):
             self.min_len <= max_len
         ), "min_len cannot be larger than max_len, please adjust these!"
         # compute the encoder output for each beam
+        if self.model.single_model.args.use_encoder_adapter == "src_lang_id":
+            net_input["lang_id"] = sample["net_input"]["src_lang_id"]
+        elif self.model.single_model.args.use_encoder_adapter == "tgt_lang_id":
+            net_input["lang_id"] = sample["tgt_lang_id"]
         with torch.autograd.profiler.record_function("EnsembleModel: forward_encoder"):
             encoder_outs = self.model.forward_encoder(net_input)
 

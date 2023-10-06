@@ -30,6 +30,7 @@ def train_summarization_model(data_dir,
                               use_kldivloss=True,
                               use_encoder_output_adapter=False,
                               use_decoder_adapter=False,
+                              use_encoder_adapter="no",
                               masked_labels=False,
                               sampling="temperature",
                               num_language_to_classify="3"):
@@ -77,7 +78,8 @@ def train_summarization_model(data_dir,
          "--find-unused-parameters",
          "--no-epoch-checkpoints",
          "--freeze-elements", freeze_elements,
-         "--label-smoothing", label_smoothing]
+         "--label-smoothing", label_smoothing,
+         "--use-encoder-adapter", use_encoder_adapter]
     )
     if freeze_encoder_layers:
         sys.argv.append("--freeze-encoder-layers")
@@ -119,7 +121,7 @@ def train_summarization_model(data_dir,
         sys.argv.append("--use-encoder-output-adapter")
     if use_decoder_adapter:
         sys.argv.append("--use-decoder-adapter")
-    if use_encoder_output_adapter or use_decoder_adapter:
+    if use_encoder_output_adapter or use_decoder_adapter or use_encoder_adapter:
         sys.argv.extend(["--max-tokens", "4500"])
     else:
         sys.argv.extend(["--max-tokens", "2800"])
