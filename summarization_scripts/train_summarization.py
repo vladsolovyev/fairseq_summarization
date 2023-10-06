@@ -121,7 +121,7 @@ def train_summarization_model(data_dir,
         sys.argv.append("--use-encoder-output-adapter")
     if use_decoder_adapter:
         sys.argv.append("--use-decoder-adapter")
-    if use_encoder_output_adapter or use_decoder_adapter or use_encoder_adapter:
+    if use_encoder_output_adapter or use_decoder_adapter or (use_encoder_adapter != "no"):
         sys.argv.extend(["--max-tokens", "4500"])
     else:
         sys.argv.extend(["--max-tokens", "2800"])
