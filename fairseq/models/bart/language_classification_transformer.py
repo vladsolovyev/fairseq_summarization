@@ -82,8 +82,9 @@ class LanguageClassificationTransformerEncoder(ResidualDropTransformerEncoder):
             src_lengths: Optional[torch.Tensor] = None,
             return_all_hiddens: bool = False,
             token_embeddings: Optional[torch.Tensor] = None,
+            lang_id = None
     ):
-        enc_out_dict = super().forward_scriptable(src_tokens, src_lengths, return_all_hiddens, token_embeddings)
+        enc_out_dict = super().forward_scriptable(src_tokens, src_lengths, return_all_hiddens, token_embeddings, lang_id)
         # Add encoder and classification outputs
         enc_out = enc_out_dict["encoder_out"][0]  # T x B x C
         lang_classifier_out = self.language_classifier(enc_out)  # T x B x num_lan
