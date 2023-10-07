@@ -59,16 +59,16 @@ class LanguageClassificationTransformerModel(BARTResidualDropModel):
 
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
-        return LanguageClassificationTransformerEncoder(args, src_dict, embed_tokens)
+        return LanguageClassificationTransformerEncoder(args, src_dict, embed_tokens, cls.lang_dict())
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
-        return LanguageClassificationTransformerDecoder(args, tgt_dict, embed_tokens)
+        return LanguageClassificationTransformerDecoder(args, tgt_dict, embed_tokens, cls.lang_dict())
 
 
 class LanguageClassificationTransformerEncoder(ResidualDropTransformerEncoder):
-    def __init__(self, args, dictionary, embed_tokens):
-        super().__init__(args, dictionary, embed_tokens)
+    def __init__(self, args, dictionary, embed_tokens, lang_dict):
+        super().__init__(args, dictionary, embed_tokens, lang_dict)
 
         output_dim = args.num_language_to_classify if args.language_classifier_one_vs_rest == -1 else 2
         self.language_classifier = ClassificationLayer(args=args,
@@ -92,8 +92,8 @@ class LanguageClassificationTransformerEncoder(ResidualDropTransformerEncoder):
 
 
 class LanguageClassificationTransformerDecoder(ResidualDropTransformerDecoder):
-    def __init__(self, args, dictionary, embed_tokens):
-        super().__init__(args, dictionary, embed_tokens)
+    def __init__(self, args, dictionary, embed_tokens, lang_dict):
+        super().__init__(args, dictionary, embed_tokens, lang_dict)
 
     def extract_features_scriptable(
             self,
