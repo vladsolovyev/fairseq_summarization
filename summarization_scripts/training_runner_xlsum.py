@@ -38,7 +38,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                           freeze_encoder_layers=False, adversarial_kldivloss=False,
                           adversarial_nllloss=False, masked_labels=False, label_smoothing="0.0",
                           add_translated_results=False, freeze_decoder_layers=False,
-                          freeze_elements="everything", freeze_embeddings=True):
+                          freeze_elements="everything", freeze_embeddings=True, few_shot=False):
     output_dir = "{}/{}".format(experiments_folder, prefix)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     shutil.copyfile("{}/metrics.csv".format(experiments_folder),
@@ -103,35 +103,36 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
             free_memory()
 
     # few shot experiments. Tune english model using few data from spanish, russian and gujarati datasets
-    for language in languages[1:]:
-        for data_size, max_epoch in zip([10, 100, 1000, 10000], ["12", "6", "4", "2"]):
-            if language == "gu_IN" and data_size == 10000:
-                continue
-            checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
-            train_summarization_model(data_dir="xlsum_{}".format(data_size),
-                                      lang_pairs="{}-{}".format(language, language),
-                                      checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
-                                      save_dir=checkpoint_dir,
-                                      encoder_drop_residual=encoder_drop_residual,
-                                      freeze_embeddings=freeze_embeddings,
-                                      num_workers="1",
-                                      validate=False,
-                                      max_epoch=max_epoch,
-                                      masked_labels=masked_labels,
-                                      label_smoothing=label_smoothing)
-            free_memory()
-            metrics["{}_tuned_{}".format(language, data_size)] = \
-                generate_and_evaluate_summaries(directory="xlsum",
-                                                source_language=language,
-                                                target_language=language,
-                                                lang_pairs="{}-{}".format(language, language),
-                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                                lenpen=lenpen,
-                                                rouge_scorer=rouge_scorer)
-            shutil.rmtree(checkpoint_dir)
-            save_metrics(metrics, output_dir)
-            free_memory()
-    #shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
+    if few_shot:
+        for language in languages[1:]:
+            for data_size, max_epoch in zip([10, 100, 1000, 10000], ["12", "6", "4", "2"]):
+                if language == "gu_IN" and data_size == 10000:
+                    continue
+                checkpoint_dir = "{}/xlsum_{}/{}".format(output_dir, data_size, language)
+                train_summarization_model(data_dir="xlsum_{}".format(data_size),
+                                          lang_pairs="{}-{}".format(language, language),
+                                          checkpoint="{}/xlsum/en_XX/checkpoint_best.pt".format(output_dir),
+                                          save_dir=checkpoint_dir,
+                                          encoder_drop_residual=encoder_drop_residual,
+                                          freeze_embeddings=freeze_embeddings,
+                                          num_workers="1",
+                                          validate=False,
+                                          max_epoch=max_epoch,
+                                          masked_labels=masked_labels,
+                                          label_smoothing=label_smoothing)
+                free_memory()
+                metrics["{}_tuned_{}".format(language, data_size)] = \
+                    generate_and_evaluate_summaries(directory="xlsum",
+                                                    source_language=language,
+                                                    target_language=language,
+                                                    lang_pairs="{}-{}".format(language, language),
+                                                    checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                    lenpen=lenpen,
+                                                    rouge_scorer=rouge_scorer)
+                shutil.rmtree(checkpoint_dir)
+                save_metrics(metrics, output_dir)
+                free_memory()
+        #shutil.rmtree("{}/xlsum/en_XX".format(output_dir))
 
     # train using english, spanish and russian together and evaluate with all 4 languages
     checkpoint_dir = "{}/multiEnEsRu".format(output_dir)
@@ -157,31 +158,32 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                             rouge_scorer=rouge_scorer)
         save_metrics(metrics, output_dir)
         free_memory()
-    # few shot experiments. Tune multilingual model using few data from gujarati dataset
-    for data_size, max_epoch in zip([10, 100, 1000], ["12", "6", "4"]):
-        checkpoint_dir = "{}/multiEnEsRu_gujarati_{}".format(output_dir, data_size)
-        train_summarization_model(data_dir="xlsum_{}".format(data_size),
-                                  lang_pairs="gu_IN-gu_IN",
-                                  checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
-                                  save_dir=checkpoint_dir,
-                                  encoder_drop_residual=encoder_drop_residual,
-                                  freeze_embeddings=freeze_embeddings,
-                                  num_workers="1",
-                                  validate=False,
-                                  max_epoch=max_epoch,
-                                  masked_labels=masked_labels,
-                                  label_smoothing=label_smoothing)
-        metrics["gu_IN_multiEnEsRu_{}".format(data_size)] = \
-            generate_and_evaluate_summaries(directory="xlsum",
-                                            source_language="gu_IN",
-                                            target_language="gu_IN",
-                                            lang_pairs="gu_IN-gu_IN",
-                                            checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                            lenpen=lenpen,
-                                            rouge_scorer=rouge_scorer)
-        save_metrics(metrics, output_dir)
-        shutil.rmtree(checkpoint_dir)
-        free_memory()
+    if few_shot:
+        # few shot experiments. Tune multilingual model using few data from gujarati dataset
+        for data_size, max_epoch in zip([10, 100, 1000], ["12", "6", "4"]):
+            checkpoint_dir = "{}/multiEnEsRu_gujarati_{}".format(output_dir, data_size)
+            train_summarization_model(data_dir="xlsum_{}".format(data_size),
+                                      lang_pairs="gu_IN-gu_IN",
+                                      checkpoint="{}/multiEnEsRu/checkpoint_best.pt".format(output_dir),
+                                      save_dir=checkpoint_dir,
+                                      encoder_drop_residual=encoder_drop_residual,
+                                      freeze_embeddings=freeze_embeddings,
+                                      num_workers="1",
+                                      validate=False,
+                                      max_epoch=max_epoch,
+                                      masked_labels=masked_labels,
+                                      label_smoothing=label_smoothing)
+            metrics["gu_IN_multiEnEsRu_{}".format(data_size)] = \
+                generate_and_evaluate_summaries(directory="xlsum",
+                                                source_language="gu_IN",
+                                                target_language="gu_IN",
+                                                lang_pairs="gu_IN-gu_IN",
+                                                checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
+                                                lenpen=lenpen,
+                                                rouge_scorer=rouge_scorer)
+            save_metrics(metrics, output_dir)
+            shutil.rmtree(checkpoint_dir)
+            free_memory()
 
     # Tune multilingual model using adversarial loss using nllloss
     if adversarial_nllloss:
