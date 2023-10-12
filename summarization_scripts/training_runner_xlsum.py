@@ -139,6 +139,7 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
     train_summarization_model(data_dir="xlsum",
                               lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:-1]]),
                               save_dir=checkpoint_dir,
+                              sampling_temperature="3.0",
                               encoder_drop_residual=encoder_drop_residual,
                               freeze_encoder_layers=freeze_encoder_layers,
                               freeze_decoder_layers=freeze_decoder_layers,

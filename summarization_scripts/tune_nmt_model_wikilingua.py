@@ -57,6 +57,7 @@ def tune_nmt_models():
                                       lang_pairs=",".join(["{}-{}".format(language, language) for language in languages[:3]]),
                                       checkpoint="translated_pretrained/{}/{}{}".format(dir_name, checkpoint_dir, checkpoint_name),
                                       save_dir=model_dir,
+                                      sampling_temperature="10.0",
                                       freeze_encoder_layers=True,
                                       freeze_decoder_layers=True,
                                       freeze_elements="attn_qk",
