@@ -11,18 +11,21 @@ languages_mbart = ["en_XX", "es_XX", "ru_RU", "tr_TR"]
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 
 
-def map_datasets(mono_dataset, cross_dataset):
+def map_datasets(mono_dataset, cross_dataset, train=False):
     input_texts = dict(zip(mono_dataset["source"], mono_dataset["target"]))
     input_texts_keys = set(input_texts.keys())
     summaries_input = [input_texts[cross_sample["source"]] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
     summaries_output = [cross_sample["target"] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
+    if train:
+        summaries_input = summaries_input[:3052]
+        summaries_output = summaries_output[:3052]
     return summaries_input, summaries_output
 
 
 def parse_datasets(mono_dataset, cross_dataset):
     train_mono_dataset = mono_dataset["train"]
     train_cross_dataset = cross_dataset["train"]
-    train_input, train_output = map_datasets(train_mono_dataset, train_cross_dataset)
+    train_input, train_output = map_datasets(train_mono_dataset, train_cross_dataset, train=True)
     validation_mono_dataset = mono_dataset["sampled_validation"]
     validation_cross_dataset = cross_dataset["sampled_validation"]
     validation_input, validation_output = map_datasets(validation_mono_dataset, validation_cross_dataset)
@@ -33,7 +36,7 @@ def main():
     statistics = dict()
     for i in range(len(languages)):
         mono_dataset = load_dataset("GEM/wiki_lingua", languages[i], cache_dir="./cache")
-        train_data, validation_data = mono_dataset["train"]["target"], mono_dataset["sampled_validation"]["target"]
+        train_data, validation_data = mono_dataset["train"]["target"][:3052], mono_dataset["sampled_validation"]["target"]
         print("{}-{}-{}".format(languages[i], len(train_data), len(validation_data)))
         statistics["{}_train".format(languages[i])] = len(train_data)
         statistics["{}_valid".format(languages[i])] = len(validation_data)
