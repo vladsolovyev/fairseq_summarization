@@ -18,7 +18,7 @@ def map_datasets(mono_dataset, cross_dataset, train=False):
     summaries_input = [input_texts[cross_sample["source"]] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
     summaries_output = [cross_sample["target"] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
     if train:
-        summaries_input, summaries_output = zip(*random.sample(list(zip(summaries_input, summaries_output)), 3052))
+        summaries_input, summaries_output = map(list, zip(*random.sample(list(zip(summaries_input, summaries_output)), 3052)))
     return summaries_input, summaries_output
 
 
