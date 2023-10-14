@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 
 import pandas as pd
 from datasets import load_dataset
@@ -17,8 +18,7 @@ def map_datasets(mono_dataset, cross_dataset, train=False):
     summaries_input = [input_texts[cross_sample["source"]] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
     summaries_output = [cross_sample["target"] for cross_sample in cross_dataset if cross_sample["source"] in input_texts_keys]
     if train:
-        summaries_input = summaries_input[:3052]
-        summaries_output = summaries_output[:3052]
+        summaries_input, summaries_output = zip(*random.sample(list(zip(summaries_input, summaries_output)), 3052))
     return summaries_input, summaries_output
 
 
@@ -48,13 +48,13 @@ def main():
             train_input, train_output, validation_input, validation_output = parse_datasets(mono_dataset, cross_dataset)
             print("{}-{}-{}-{}".format(languages[i], languages[k], len(train_input), len(validation_input)))
             statistics["{}-{}_train".format(languages[i], languages[k])] = len(train_input)
-            dataset = load_dataset("ted_talks_iwslt", language_pair=(languages[i], languages[k]),
-                                   year="2016", cache_dir="./cache")
-            train_data = pd.DataFrame(dataset["train"]["translation"]).to_dict(orient="list")
-            train_input += train_data[languages[i]]
-            train_output += train_data[languages[k]]
-            print("{}-{}-{}-{}".format(languages[i], languages[k], len(train_input), len(validation_input)))
-            statistics["{}-{}_train_with_ted".format(languages[i], languages[k])] = len(train_input)
+            #dataset = load_dataset("ted_talks_iwslt", language_pair=(languages[i], languages[k]),
+            #                       year="2016", cache_dir="./cache")
+            #train_data = pd.DataFrame(dataset["train"]["translation"]).to_dict(orient="list")
+            #train_input += train_data[languages[i]]
+            #train_output += train_data[languages[k]]
+            #print("{}-{}-{}-{}".format(languages[i], languages[k], len(train_input), len(validation_input)))
+            #statistics["{}-{}_train_with_ted".format(languages[i], languages[k])] = len(train_input)
             statistics["{}-{}_valid".format(languages[i], languages[k])] = len(validation_input)
             create_translated_data(train_input, train_output, "train",
                                    languages_mbart[i], languages_mbart[k])
