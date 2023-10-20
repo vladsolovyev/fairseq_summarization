@@ -66,10 +66,7 @@ class ResidualDropTransformerDecoder(TransformerDecoder):
         self.lang_dict = lang_dict
         self.fc_language_adapter = nn.ModuleList()
         for i in range(len(self.lang_dict)):
-            adapter = nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim)
-            nn.init.eye_(adapter.weight)
-            adapter.bias.data.fill_(0)
-            self.fc_language_adapter.append(adapter)
+            self.fc_language_adapter.append(nn.Linear(args.encoder_embed_dim, args.encoder_embed_dim))
         self.dropout = FairseqDropout(args.dropout, module_name=self.__class__.__name__)
         self.layers = nn.ModuleList(
             [AdapterTransformerDecoderLayer(args, len(lang_dict), lang_dict) for i in
