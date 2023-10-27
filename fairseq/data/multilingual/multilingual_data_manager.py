@@ -555,6 +555,13 @@ class MultilingualDatasetManager(object):
 
         src_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
         tgt_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
+        with open("../summarization_datasets/word_lists/mask_{}.txt".format(src.split(".")[1]), "r") as file:
+            for line in file:
+                src_masked_lables[int(line) + 4] = True
+        with open("../summarization_datasets/word_lists/mask_{}.txt".format(tgt.split(".")[1]), "r") as file:
+            for line in file:
+                tgt_masked_lables[int(line) + 4] = True
+
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else "")
 
@@ -1126,6 +1133,7 @@ class MultilingualDatasetManager(object):
             for masked_label in [src_masked_lables, tgt_masked_lables]:
                 if masked_label is not None:
                     if masked_label[0] not in masked_labels_per_language:
+                        masked_label[1][masked_label[0]] = True
                         masked_labels_per_language[masked_label[0]] = masked_label[1]
                     else:
                         masked_labels_per_language[masked_label[0]] =\
