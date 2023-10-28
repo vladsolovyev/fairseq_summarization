@@ -555,12 +555,17 @@ class MultilingualDatasetManager(object):
 
         src_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
         tgt_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
-        with open("../summarization_datasets/word_lists/mask_{}.txt".format(src.split(".")[1]), "r") as file:
-            for line in file:
-                src_masked_lables[int(line) + 4] = True
-        with open("../summarization_datasets/word_lists/mask_{}.txt".format(tgt.split(".")[1]), "r") as file:
-            for line in file:
-                tgt_masked_lables[int(line) + 4] = True
+        if self.args.masked_labels:
+            with open("../summarization_datasets/word_lists/mask_{}.txt".format(src.split(".")[1]), "r") as file:
+                lines = file.readlines()
+                for i in range(len(lines)):
+                    if int(lines[i]) == 1:
+                        src_masked_lables[i + 4] = True
+            with open("../summarization_datasets/word_lists/mask_{}.txt".format(tgt.split(".")[1]), "r") as file:
+                lines = file.readlines()
+                for i in range(len(lines)):
+                    if int(lines[i]) == 1:
+                        tgt_masked_lables[i + 4] = True
 
         for k in itertools.count():
             split_k = split + (str(k) if k > 0 else "")
