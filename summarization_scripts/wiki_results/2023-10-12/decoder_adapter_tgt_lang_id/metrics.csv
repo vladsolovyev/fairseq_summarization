@@ -1,0 +1,5 @@
+,rouge1_with_stemming,rouge2_with_stemming,rougeL_with_stemming,rougeLsum_with_stemming,rouge1_without_stemming,rouge2_without_stemming,rougeL_without_stemming,rougeLsum_without_stemming,bert_score_precision,bert_score_recall,bert_score_f1,en_prob,es_prob,ru_prob,gu_prob,tr_prob,gen_len
+es_XX_en_XX_mono,4.5499,0.5484,4.1629,4.1259,4.1611,0.534,3.8194,3.7814,70.418,70.7736,70.5539,1.2353,98.7276,0.0129,0.0086,0.0156,25.365
+es_XX_ru_RU_mono,0.6956,0.1294,0.6623,0.6352,0.6919,0.1294,0.6591,0.632,64.1861,65.7371,64.9161,0.0536,99.6475,0.2871,0.0001,0.0117,56.8191
+ru_RU_en_XX_mono,20.859,5.8253,17.0954,17.1003,19.8115,5.5885,16.3388,16.3381,71.0209,70.6954,70.7856,57.9314,0.3666,41.6281,0.0016,0.0723,19.3845
+tr_TR_en_XX_mono,16.7238,4.7878,14.1348,14.0902,15.9958,4.6646,13.5709,13.5235,69.0718,67.9157,68.4221,49.3951,0.8623,0.1447,0.002,49.5959,17.2443
