@@ -102,8 +102,8 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                                          checkpoint="{}/checkpoint_best.pt".format(
                                                              monolingual_checkpoint_dir),
                                                          lenpen=lenpen)
-                metrics["{}_en_translated".format(source_language)] = result
-                translation_metrics["{}_en_translated".format(source_language)] = result
+                metrics["{}_en_translated_nllb".format(source_language)] = result
+                translation_metrics["{}_en_translated_nllb".format(source_language)] = result
                 save_metrics(metrics, output_dir)
                 save_metrics(translation_metrics, experiments_folder)
                 free_memory()
@@ -116,8 +116,8 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                     checkpoint="{}/checkpoint_best.pt".format(monolingual_checkpoint_dir),
                     lenpen=lenpen,
                     translate_to_lang=translation_language)
-                metrics["{}_{}_translated".format(source_language, translation_language)] = result
-                translation_metrics["{}_{}_translated".format(source_language, translation_language)] = result
+                metrics["{}_{}_translated_nllb".format(source_language, translation_language)] = result
+                translation_metrics["{}_{}_translated_nllb".format(source_language, translation_language)] = result
                 save_metrics(metrics, output_dir)
                 save_metrics(translation_metrics, experiments_folder)
                 free_memory()

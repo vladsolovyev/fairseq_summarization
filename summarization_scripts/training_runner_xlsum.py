@@ -96,8 +96,8 @@ def run_xlsum_experiments(encoder_drop_residual=None, experiments_folder="", pre
                                                      lenpen=lenpen,
                                                      translate_to_lang=translation_language,
                                                      rouge_scorer=rouge_scorer)
-            metrics["{}_translated".format(translation_language)] = result
-            translation_metrics["{}_translated".format(translation_language)] = result
+            metrics["{}_translated_nllb".format(translation_language)] = result
+            translation_metrics["{}_translated_nllb".format(translation_language)] = result
             save_metrics(metrics, output_dir)
             save_metrics(translation_metrics, experiments_folder)
             free_memory()

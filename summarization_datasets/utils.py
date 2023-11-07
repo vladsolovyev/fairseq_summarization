@@ -3,10 +3,17 @@ from pathlib import Path
 import numpy as np
 from easynmt import EasyNMT
 from sentencepiece import SentencePieceProcessor
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 columns = ["input_text", "summary"]
-translation_model = EasyNMT("mbart50_m2en", cache_folder="./cache")
+tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M")
+model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
+
+lang_to_nllb = dict({"es": "spa_Latn",
+                     "ru": "rus_Cyrl",
+                     "gu": "guj_Gujr",
+                     "tr": "tur_Latn"})
 
 
 def write_to_file(lines, file):
@@ -46,10 +53,15 @@ def encode_dataset_and_create_statistics(dataset_name, dataset, source_language,
 def create_translated_data(input, target, directory, source_lang):
     Path(directory).mkdir(exist_ok=True)
     if source_lang != "en":
-        input = translation_model.translate(input,
-                                            source_lang=source_lang,
-                                            target_lang="en",
-                                            show_progress_bar=True)
+        translated = list()
+        for sample in input:
+            tokenizer.src_lang = lang_to_nllb[source_lang]
+            inputs = tokenizer(sample, return_tensors="pt")
+            translated_tokens = model.generate(**inputs,
+                                               forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"],
+                                               max_length=1200)
+            translated.append(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0])
+        input = translated
     encoded_translated_input = spp.encode(input, out_type=str)
     encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_translated_input]
     write_to_file(encoded_texts, "{}/test.input_text.en_XX".format(directory))

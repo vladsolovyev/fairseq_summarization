@@ -555,7 +555,7 @@ class MultilingualDatasetManager(object):
 
         src_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
         tgt_masked_lables = torch.zeros(len(src_dict), dtype=torch.bool)
-        if self.args.masked_labels:
+        if split == "train" and self.args.masked_labels:
             with open("../summarization_datasets/word_lists/mask_{}.txt".format(src.split(".")[1]), "r") as file:
                 lines = file.readlines()
                 for i in range(len(lines)):
