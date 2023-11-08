@@ -1,8 +1,10 @@
 from pathlib import Path
 
+import nltk
 import numpy as np
 import torch
 from sentencepiece import SentencePieceProcessor
+from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
@@ -56,13 +58,13 @@ def create_translated_data(input, target, directory, source_lang):
     if source_lang != "en":
         tokenizer.src_lang = lang_to_nllb[source_lang]
         translated = list()
-        for i in range(0, len(input), 50):
-            batch = input[i:i + 50]
-            inputs = tokenizer(batch, return_tensors="pt", truncation=True, padding=True).to(device)
+        for text in tqdm(input):
+            sentences = nltk.sent_tokenize(text)
+            inputs = tokenizer(sentences, return_tensors="pt", truncation=True, padding=True).to(device)
             translated_tokens = model.generate(**inputs,
                                                forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"],
-                                               max_length=1200)
-            translated.append(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True))
+                                               max_new_tokens=200)
+            translated.append(" ".join(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)))
         input = translated
     encoded_translated_input = spp.encode(input, out_type=str)
     encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_translated_input]

@@ -10,6 +10,7 @@ import numpy as np
 import torch
 from langid.langid import LanguageIdentifier, model
 from rouge_score import rouge_scorer
+from tqdm import tqdm
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 from fairseq.dataclass import FairseqDataclass
@@ -105,13 +106,13 @@ class RougeBertScoreScorer(BaseScorer):
         if self.cfg.translate_to_lang in languages[1:]:
             self.cfg.lang = translation_to_mbart_language[self.cfg.translate_to_lang]
             translated = list()
-            for i in range(0, len(self.pred), 50):
-                batch = self.pred[i:i + 50]
-                inputs = tokenizer(batch, return_tensors="pt", truncation=True, padding=True).to(device)
-                translated_tokens = nllb_model.generate(**inputs,
-                                                        forced_bos_token_id=tokenizer.lang_code_to_id[lang_to_nllb[self.cfg.translate_to_lang]],
-                                                        max_length=1200)
-                translated.append(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True))
+            for text in tqdm(self.pred):
+                sentences = nltk.sent_tokenize(text)
+                inputs = tokenizer(sentences, return_tensors="pt", truncation=True, padding=True).to(device)
+                translated_tokens = model.generate(**inputs,
+                                                   forced_bos_token_id=tokenizer.lang_code_to_id[lang_to_nllb[self.cfg.translate_to_lang]],
+                                                   max_new_tokens=200)
+                translated.append(" ".join(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)))
             self.pred = translated
         results = self.calculate_rouge_scores() | self.calculate_bert_score() | self.calculate_language_probabilities()
         results = {key: value * 100 for key, value in results.items()}
