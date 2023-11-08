@@ -7,9 +7,8 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 columns = ["input_text", "summary"]
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
 tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M")
-model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M").to(device)
+model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
 
 lang_to_nllb = dict({"es": "spa_Latn",
                      "ru": "rus_Cyrl",
@@ -55,7 +54,7 @@ def create_translated_data(input, target, directory, source_lang):
     Path(directory).mkdir(exist_ok=True)
     if source_lang != "en":
         tokenizer.src_lang = lang_to_nllb[source_lang]
-        inputs = tokenizer(input, return_tensors="pt", truncation=True, padding=True).to(device)
+        inputs = tokenizer(input, return_tensors="pt", truncation=True, padding=True)
         translated_tokens = model.generate(**inputs,
                                            forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"],
                                            max_length=1200)
