@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 import evaluate
 import nltk
 import numpy as np
+import torch
 from langid.langid import LanguageIdentifier, model
 from rouge_score import rouge_scorer
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -15,8 +16,9 @@ from fairseq.dataclass import FairseqDataclass
 from fairseq.scoring import BaseScorer, register_scorer
 
 nltk.download("stopwords")
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M", src_lang="eng_Latn")
-model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
+model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M").to(device)
 lang_to_nllb = dict({"es": "spa_Latn",
                      "ru": "rus_Cyrl",
                      "gu": "guj_Gujr",
@@ -102,14 +104,11 @@ class RougeBertScoreScorer(BaseScorer):
         print("number of samples: {}".format(len(self.pred)))
         if self.cfg.translate_to_lang in languages[1:]:
             self.cfg.lang = translation_to_mbart_language[self.cfg.translate_to_lang]
-            translated = list()
-            for sample in self.pred:
-                inputs = tokenizer(sample, return_tensors="pt")
-                translated_tokens = model.generate(**inputs,
-                                                   forced_bos_token_id=tokenizer.lang_code_to_id[lang_to_nllb[self.cfg.translate_to_lang]],
-                                                   max_length=1200)
-                translated.append(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0])
-            self.pred = translated
+            inputs = tokenizer(self.pred, return_tensors="pt", truncation=True, padding=True).to(device)
+            translated_tokens = model.generate(**inputs,
+                                               forced_bos_token_id=tokenizer.lang_code_to_id[lang_to_nllb[self.cfg.translate_to_lang]],
+                                               max_length=1200)
+            self.pred = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)
         results = self.calculate_rouge_scores() | self.calculate_bert_score() | self.calculate_language_probabilities()
         results = {key: value * 100 for key, value in results.items()}
         results["gen_len"] = np.mean([len(sentence.split()) for sentence in self.pred])

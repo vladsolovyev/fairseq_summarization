@@ -1,14 +1,15 @@
 from pathlib import Path
 
 import numpy as np
-from easynmt import EasyNMT
+import torch
 from sentencepiece import SentencePieceProcessor
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 spp = SentencePieceProcessor(model_file="mbart.cc25.v2/sentence.bpe.model")
 columns = ["input_text", "summary"]
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M")
-model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
+model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M").to(device)
 
 lang_to_nllb = dict({"es": "spa_Latn",
                      "ru": "rus_Cyrl",
@@ -53,15 +54,12 @@ def encode_dataset_and_create_statistics(dataset_name, dataset, source_language,
 def create_translated_data(input, target, directory, source_lang):
     Path(directory).mkdir(exist_ok=True)
     if source_lang != "en":
-        translated = list()
-        for sample in input:
-            tokenizer.src_lang = lang_to_nllb[source_lang]
-            inputs = tokenizer(sample, return_tensors="pt")
-            translated_tokens = model.generate(**inputs,
-                                               forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"],
-                                               max_length=1200)
-            translated.append(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)[0])
-        input = translated
+        tokenizer.src_lang = lang_to_nllb[source_lang]
+        inputs = tokenizer(input, return_tensors="pt", truncation=True, padding=True).to(device)
+        translated_tokens = model.generate(**inputs,
+                                           forced_bos_token_id=tokenizer.lang_code_to_id["eng_Latn"],
+                                           max_length=1200)
+        input = tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)
     encoded_translated_input = spp.encode(input, out_type=str)
     encoded_texts = [" ".join(encoded_parts) for encoded_parts in encoded_translated_input]
     write_to_file(encoded_texts, "{}/test.input_text.en_XX".format(directory))
