@@ -19,7 +19,7 @@ from fairseq.scoring import BaseScorer, register_scorer
 nltk.download("stopwords")
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M", src_lang="eng_Latn")
-nllb_model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M")
+nllb_model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M").to(device)
 lang_to_nllb = dict({"es": "spa_Latn",
                      "ru": "rus_Cyrl",
                      "gu": "guj_Gujr",
