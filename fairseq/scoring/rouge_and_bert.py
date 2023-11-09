@@ -109,9 +109,9 @@ class RougeBertScoreScorer(BaseScorer):
             for text in tqdm(self.pred):
                 sentences = nltk.sent_tokenize(text)
                 inputs = tokenizer(sentences, return_tensors="pt", truncation=True, padding=True).to(device)
-                translated_tokens = model.generate(**inputs,
-                                                   forced_bos_token_id=tokenizer.lang_code_to_id[lang_to_nllb[self.cfg.translate_to_lang]],
-                                                   max_new_tokens=200)
+                translated_tokens = nllb_model.generate(**inputs,
+                                                        forced_bos_token_id=tokenizer.lang_code_to_id[lang_to_nllb[self.cfg.translate_to_lang]],
+                                                        max_new_tokens=200)
                 translated.append(" ".join(tokenizer.batch_decode(translated_tokens, skip_special_tokens=True)))
             self.pred = translated
         results = self.calculate_rouge_scores() | self.calculate_bert_score() | self.calculate_language_probabilities()
