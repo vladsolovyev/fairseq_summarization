@@ -26,6 +26,7 @@ def train_classifiers():
                                   checkpoint=model,
                                   save_dir=save_dir,
                                   use_classifier=True,
+                                  sampling_temperature="3.0",
                                   num_language_to_classify="4",
                                   append_src_tok=False,
                                   freeze_encoder_layers=True,
@@ -42,7 +43,7 @@ def train_classifiers():
                                                 scoring="classification",
                                                 lenpen=lenpen,
                                                 min_len=min_len)
-            save_metrics(metrics, save_dir)
+            save_metrics(metrics, directory)
             free_memory()
         shutil.rmtree(save_dir)
 
