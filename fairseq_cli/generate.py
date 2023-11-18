@@ -180,9 +180,10 @@ def _main(cfg: DictConfig, output_file):
             x = tokenizer.decode(x)
         return x
 
-    cfg.scoring.lang = cfg.task.target_lang
-    cfg.scoring.translate_to_lang = cfg.task.translate_to_lang
-    cfg.scoring.rouge_scorer = cfg.task.rouge_scorer
+    if cfg.task.scoring == "rougebert":
+        cfg.scoring.lang = cfg.task.target_lang
+        cfg.scoring.translate_to_lang = cfg.task.translate_to_lang
+        cfg.scoring.rouge_scorer = cfg.task.rouge_scorer
     scorer = scoring.build_scorer(cfg.scoring, tgt_dict)
 
     num_sentences = 0
@@ -208,7 +209,7 @@ def _main(cfg: DictConfig, output_file):
             constraints = sample["constraints"]
 
         gen_timer.start()
-        hypos = task.inference_step(
+        hypos, encoder_outs = task.inference_step(
             generator,
             models,
             sample,
@@ -366,7 +367,11 @@ def _main(cfg: DictConfig, output_file):
                         hypo_tokens = tgt_dict.encode_line(
                             detok_hypo_str, add_if_not_exist=True
                         )
-                    if hasattr(scorer, "add_string"):
+                    if hasattr(scorer, "add_classification_out") and "classification_out" in encoder_outs:
+                        src_pad_idx = sample["net_input"]["src_tokens"].eq(src_dict.pad())
+                        classification_out = encoder_outs["classification_out"].transpose(0, 1)
+                        scorer.add_classification_out(classification_out, src_pad_idx)
+                    elif hasattr(scorer, "add_string"):
                         scorer.add_string(target_str, detok_hypo_str)
                     else:
                         scorer.add(target_tokens, hypo_tokens)

@@ -244,7 +244,7 @@ class TrainerMultiple(object):
     def optimizer(self):
         if self._optimizer is None or self._optimizer2 is None:
             self._build_optimizer()
-        if self._num_updates % 2 == 0:
+        if (self._num_updates + 1) % self.cfg.task.language_classifier_steps == 0:
             return self._optimizer
         else:
             return self._optimizer2

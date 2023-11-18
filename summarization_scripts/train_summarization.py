@@ -33,7 +33,8 @@ def train_summarization_model(data_dir,
                               use_encoder_adapter="no",
                               masked_labels=False,
                               sampling="temperature",
-                              num_language_to_classify="3"):
+                              num_language_to_classify="3",
+                              use_classifier=True):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
@@ -94,15 +95,16 @@ def train_summarization_model(data_dir,
     if torch.cuda.is_available():
         sys.argv.extend(["--fp16",
                          "--fp16-scale-tolerance", "0.1"])
-    if use_adversarial_loss:
+    if use_adversarial_loss or use_classifier:
         sys.argv.extend(["--arch", "language_classification_transformer",
                          "--task", "translation_multi_simple_epoch_task_with_adversarial_loss",
                          "--criterion", "language_classification_cross_entropy",
                          "--num-language-to-classify", num_language_to_classify,
                          "--language-classifier-one-vs-rest", "-1"])
+        if use_classifier:
+            sys.argv.extend(["--language-classifier-steps", str(int(max_update) + 2)])
         if use_kldivloss:
             sys.argv.append("--use-kldivloss")
-
     else:
         sys.argv.extend(["--arch", "mbart_large_residual_drop",
                          "--task", "translation_multi_simple_epoch",

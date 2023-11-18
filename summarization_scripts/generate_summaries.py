@@ -16,6 +16,7 @@ def generate_and_evaluate_summaries(directory,
                                     translate_to_lang="",
                                     rouge_scorer="huggingface",
                                     append_src_tok=True,
+                                    scoring="rougebert",
                                     use_encoder_output_adapter=False,
                                     use_decoder_adapter=False,
                                     use_encoder_adapter="no"):
@@ -38,7 +39,7 @@ def generate_and_evaluate_summaries(directory,
          "--bpe", "sentencepiece",
          "--sentencepiece-model", "../summarization_datasets/mbart.cc25.v2/sentence.bpe.model",
          "--remove-bpe",
-         "--scoring", "rougebert",
+         "--scoring", scoring,
          "--num-workers", "4",
          "--lang-tok-style", "mbart",
          "--max-len-b", "100",
@@ -46,8 +47,6 @@ def generate_and_evaluate_summaries(directory,
          "--lenpen", lenpen,
          "--no-repeat-ngram-size", ngram,
          "--prefix-size", "1",
-         "--translate-to-lang", translate_to_lang,
-         "--rouge-scorer", rouge_scorer,
          "--use-encoder-adapter", use_encoder_adapter,
          "--unkpen", "1e6"]
     )
@@ -59,6 +58,9 @@ def generate_and_evaluate_summaries(directory,
         sys.argv.append("--use-encoder-output-adapter")
     if use_decoder_adapter:
         sys.argv.append("--use-decoder-adapter")
+    if scoring == "rougebert":
+        sys.argv.extend(["--translate-to-lang", translate_to_lang,
+                         "--rouge-scorer", rouge_scorer])
 
     results = generate.cli_main().scores
     print("Checkpoint: {}, languages: {}-{}, results: {}".format(

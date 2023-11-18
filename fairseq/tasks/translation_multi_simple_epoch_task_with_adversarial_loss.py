@@ -62,7 +62,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
             self, sample, model, criterion, optimizer, update_num, ignore_grad=False
     ):
         # Alternate
-        if update_num % self.language_classifier_steps == 0:
+        if (update_num + 1) % self.language_classifier_steps == 0:
             return self.translation_step(sample, model, criterion, optimizer, update_num, ignore_grad)
         else:
             return self.classification_step(sample, model, criterion, optimizer, update_num, ignore_grad)
@@ -73,7 +73,7 @@ class TranslationMultiSimpleEpochTaskWithAdversarialLoss(TranslationMultiSimpleE
             loss, classifier_loss, sample_size, logging_output = \
                 criterion(model,
                           sample,
-                          classification_step=False,
+                          classification_step=True,
                           language_classifier_one_vs_rest=self.language_classifier_one_vs_rest,
                           use_kldivloss=self.use_kldivloss)
             logging_output["loss"] = classifier_loss.data
