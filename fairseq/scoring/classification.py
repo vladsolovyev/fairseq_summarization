@@ -19,14 +19,17 @@ class ClassificationScorer(BaseScorer):
     def __init__(self, cfg):
         super(ClassificationScorer, self).__init__(cfg)
         self.cfg = cfg
-        self.classifications = np.array([0, 0, 0])
+        self.classifications = None
         self.samples_number = 0
         self.scores = dict()
 
     def add_classification_out(self, classification_out, src_pad_idx):
         classifications = F.softmax(classification_out.float(), dim=-1)[~src_pad_idx]
         self.samples_number += len(classifications)
-        self.classifications = np.add(self.classifications, classifications.sum(axis=0).cpu())
+        if self.classifications is None:
+            self.classifications = classifications.sum(axis=0).cpu()
+        else:
+            self.classifications = np.add(self.classifications, classifications.sum(axis=0).cpu())
 
     def score(self, order=4):
         return 0.0
