@@ -19,19 +19,21 @@ class ClassificationScorer(BaseScorer):
     def __init__(self, cfg):
         super(ClassificationScorer, self).__init__(cfg)
         self.cfg = cfg
-        self.classifications = list()
+        self.classifications = None
         self.scores = dict()
 
     def add_classification_out(self, classification_out, src_pad_idx):
         classification_out = F.softmax(classification_out.float(), dim=-1)
-        self.classifications.extend(classification_out[~src_pad_idx].tolist())
+        if self.classifications is None:
+            self.classifications = np.array(classification_out[~src_pad_idx])
+        else:
+            self.classifications = np.append(self.classifications, classification_out[~src_pad_idx], 0)
 
     def score(self, order=4):
         return 0.0
 
     def result_string(self, order=4):
-        classifications = np.array(self.classifications)
-        scores = np.round(classifications.mean(axis=0), 4)
+        scores = np.round(self.classifications.mean(axis=0), 4)
         for language, score in zip(languages, scores):
             self.scores[language] = score
         return "Encoder output classification: {}".format(self.scores)
