@@ -27,9 +27,9 @@ class ClassificationScorer(BaseScorer):
         classifications = F.softmax(classification_out.float(), dim=-1)[~src_pad_idx]
         self.samples_number += len(classifications)
         if self.classifications is None:
-            self.classifications = classifications.sum(axis=0).cpu()
+            self.classifications = np.array(classifications.sum(axis=0).cpu())
         else:
-            self.classifications = np.add(self.classifications, classifications.sum(axis=0).cpu())
+            self.classifications = np.add(self.classifications, np.array(classifications.sum(axis=0).cpu()))
 
     def score(self, order=4):
         return 0.0

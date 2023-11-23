@@ -11,12 +11,13 @@ min_len = "10"
 
 
 def train_classifiers():
-    for dir_name, checkpoint_name in zip(
+    for dir_name, checkpoint_name, encoder_drop_residual in zip(
             ["base_model_with_adv/monolingual_multi",
              "base_model_with_adv/monolingual_with_classifier_kldivloss",
              "base_model_with_adv/monolingual_with_classifier_nll",
              "residual_drop_at_7/monolingual_with_classifier_kldivloss"],
-            ["checkpoint_best.pt", "checkpoint_last.pt", "checkpoint_last.pt", "checkpoint_last.pt"]):
+            ["checkpoint_best.pt", "checkpoint_last.pt", "checkpoint_last.pt", "checkpoint_last.pt"],
+            [None, None, None, "7"]):
         directory = "wiki_results/2023-10-12/{}".format(dir_name)
         model = "{}/{}".format(directory, checkpoint_name)
         save_dir = "{}/classification".format(directory)
@@ -26,6 +27,7 @@ def train_classifiers():
                                   lang_pairs=",".join(["{}-{}".format(language, language) for language in languages]),
                                   checkpoint=model,
                                   save_dir=save_dir,
+                                  encoder_drop_residual=encoder_drop_residual,
                                   use_classifier=True,
                                   sampling_temperature="3.0",
                                   num_language_to_classify="4",
