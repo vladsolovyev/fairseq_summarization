@@ -15,9 +15,10 @@ def train_classifiers():
             ["base_model_with_adv/monolingual_multi",
              "base_model_with_adv/monolingual_with_classifier_kldivloss",
              "base_model_with_adv/monolingual_with_classifier_nll",
-             "residual_drop_at_7/monolingual_with_classifier_kldivloss"],
-            ["checkpoint_best.pt", "checkpoint_last.pt", "checkpoint_last.pt", "checkpoint_last.pt"],
-            [None, None, None, "7"]):
+             "residual_drop_at_7/monolingual_with_classifier_kldivloss",
+             "residual_drop_at_7/monolingual_with_classifier_nll"],
+            ["checkpoint_best.pt", "checkpoint_last.pt", "checkpoint_last.pt", "checkpoint_last.pt", "checkpoint_last.pt"],
+            [None, None, None, "6", "6"]):
         directory = "wiki_results/2023-10-12/{}".format(dir_name)
         model = "{}/{}".format(directory, checkpoint_name)
         save_dir = "{}/classification".format(directory)
