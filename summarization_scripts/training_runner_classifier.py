@@ -33,6 +33,8 @@ def train_classifiers():
                                   sampling_temperature="3.0",
                                   num_language_to_classify="4",
                                   append_src_tok=False,
+                                  max_update="100000",
+                                  validate=False,
                                   freeze_encoder_layers=True,
                                   freeze_decoder_layers=True,
                                   freeze_elements="everything")
@@ -43,7 +45,7 @@ def train_classifiers():
                                                 source_language=language,
                                                 target_language=language,
                                                 lang_pairs="{}-{}".format(language, language),
-                                                checkpoint="{}/checkpoint_best.pt".format(save_dir),
+                                                checkpoint="{}/checkpoint_last.pt".format(save_dir),
                                                 scoring="classification",
                                                 lenpen=lenpen,
                                                 min_len=min_len)
