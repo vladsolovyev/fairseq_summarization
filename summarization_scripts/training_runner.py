@@ -1,7 +1,6 @@
 from datetime import datetime
 from pathlib import Path
 
-from summarization_scripts.training_runner_adapters import run_wikilingua_experiments_with_adapters
 from summarization_scripts.training_runner_wikilingua import run_wikilingua_experiments, calculate_wikilingua_baseline
 from summarization_scripts.training_runner_xlsum import run_xlsum_experiments, calculate_xlsum_baseline
 
@@ -26,14 +25,11 @@ def start_wikilingua_experiments(date):
                                add_translated_results=True,
                                few_shot=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="unfrozen_embeddings",
-                               freeze_embeddings=False,
-                               few_shot=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="residual_drop_at_4",
-                               encoder_drop_residual="3",
+                               prefix="residual_drop_at_7",
+                               encoder_drop_residual="6",
                                english_model=False,
-                               few_shot=True)
+                               adversarial_kldivloss=True,
+                               tune_after_adversarial=True)
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="encoder_output",
                                use_encoder_output_adapter=True,
@@ -43,37 +39,6 @@ def start_wikilingua_experiments(date):
                                use_decoder_adapter=True,
                                use_encoder_adapter="tgt_lang_id",
                                english_model=False)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_except_attn_and_layer_norm",
-                               freeze_decoder_layers=True,
-                               freeze_elements="attn_and_layer_norm",
-                               adversarial_kldivloss=True)
-    # make experiments with label smoothing with the best model
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="normal_label_smoothing",
-                               label_smoothing="0.1",
-                               adversarial_kldivloss=True,
-                               tune_after_adversarial=True,
-                               english_model=False)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="masked_label",
-                               label_smoothing="0.1",
-                               masked_labels=True,
-                               adversarial_kldivloss=True,
-                               tune_after_adversarial=True,
-                               english_model=False)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_except_attn_qk",
-                               freeze_decoder_layers=True,
-                               freeze_elements="attn_qk",
-                               adversarial_kldivloss=True)
-    run_wikilingua_experiments(experiments_folder=experiments_folder,
-                               prefix="frozen_decoder",
-                               freeze_decoder_layers=True,
-                               freeze_elements="everything",
-                               adversarial_kldivloss=True)
-
-    #run_wikilingua_experiments_with_adapters(experiments_folder=experiments_folder)
 
 
 def start_xlsum_experiments(date):
@@ -88,8 +53,7 @@ def start_xlsum_experiments(date):
                           few_shot=True)
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="unfrozen_embeddings",
-                          freeze_embeddings=False,
-                          few_shot=True)
+                          freeze_embeddings=False)
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="frozen_decoder",
                           freeze_decoder_layers=True,
@@ -104,15 +68,6 @@ def start_xlsum_experiments(date):
                           freeze_encoder_layers=True,
                           freeze_decoder_layers=True,
                           freeze_elements="attn_and_layer_norm")
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="normal_label_smoothing",
-                          label_smoothing="0.1",
-                          few_shot=True)
-    run_xlsum_experiments(experiments_folder=experiments_folder,
-                          prefix="masked_label",
-                          label_smoothing="0.1",
-                          masked_labels=True,
-                          few_shot=True)
 
 
 if __name__ == "__main__":
