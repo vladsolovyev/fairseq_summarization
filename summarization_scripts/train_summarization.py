@@ -34,7 +34,7 @@ def train_summarization_model(data_dir,
                               masked_labels=False,
                               sampling="temperature",
                               num_language_to_classify="3",
-                              use_classifier=True):
+                              use_classifier=False):
     sys.argv.extend(
         [data_dir,
          "--encoder-normalize-before",
