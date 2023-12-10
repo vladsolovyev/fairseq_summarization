@@ -33,7 +33,7 @@ def train_classifiers():
                                   sampling_temperature="3.0",
                                   num_language_to_classify="4",
                                   append_src_tok=False,
-                                  max_update="100000",
+                                  max_update="120000",
                                   validate=False,
                                   freeze_encoder_layers=True,
                                   freeze_decoder_layers=True,
