@@ -1,8 +1,8 @@
 from datetime import datetime
 from pathlib import Path
 
-from summarization_scripts.training_runner_wikilingua import run_wikilingua_experiments, calculate_wikilingua_baseline
-from summarization_scripts.training_runner_xlsum import run_xlsum_experiments, calculate_xlsum_baseline
+from summarization_scripts.training_runner_wikilingua import run_wikilingua_experiments, calculate_wikilingua_supervised
+from summarization_scripts.training_runner_xlsum import run_xlsum_experiments, calculate_xlsum_supervised
 
 
 def main():
@@ -15,7 +15,7 @@ def start_wikilingua_experiments(date):
     wikilingua_folder = "wiki_results"
     experiments_folder = "{}/{}".format(wikilingua_folder, date)
     Path(experiments_folder).mkdir(parents=True, exist_ok=True)
-    calculate_wikilingua_baseline(output_dir=experiments_folder)
+    calculate_wikilingua_supervised(output_dir=experiments_folder)
 
     run_wikilingua_experiments(experiments_folder=experiments_folder,
                                prefix="base_model_with_adv",
@@ -45,7 +45,7 @@ def start_xlsum_experiments(date):
     xlsum_folder = "xlsum_results"
     experiments_folder = "{}/{}".format(xlsum_folder, date)
     Path(experiments_folder).mkdir(parents=True, exist_ok=True)
-    calculate_xlsum_baseline(output_dir=experiments_folder)
+    calculate_xlsum_supervised(output_dir=experiments_folder)
 
     run_xlsum_experiments(experiments_folder=experiments_folder,
                           prefix="base_model",

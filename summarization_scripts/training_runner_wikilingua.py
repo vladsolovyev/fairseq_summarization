@@ -12,8 +12,8 @@ lenpen = "1.0"
 min_len = "10"
 
 
-def calculate_wikilingua_baseline(output_dir=""):
-    shutil.copyfile("baselines/wiki_benchmark.csv", "{}/metrics.csv".format(output_dir))
+def calculate_wikilingua_supervised(output_dir=""):
+    shutil.copyfile("benchmark/wiki_benchmark.csv", "{}/metrics.csv".format(output_dir))
     metrics = dict()
 
     # all supervised cases together as baseline

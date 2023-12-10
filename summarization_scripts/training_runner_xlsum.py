@@ -10,8 +10,8 @@ lenpen = "0.6"
 rouge_scorer = "multilingual"
 
 
-def calculate_xlsum_baseline(output_dir=""):
-    shutil.copyfile("baselines/xlsum_benchmark.csv", "{}/metrics.csv".format(output_dir))
+def calculate_xlsum_supervised(output_dir=""):
+    shutil.copyfile("benchmark/xlsum_benchmark.csv", "{}/metrics.csv".format(output_dir))
     metrics = dict()
 
     # train baseline model and evaluate using english, spanish, russian and gujarati
