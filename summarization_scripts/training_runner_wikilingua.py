@@ -17,14 +17,14 @@ def calculate_wikilingua_baseline(output_dir=""):
     metrics = dict()
 
     # all supervised cases together as baseline
-    checkpoint_dir = "{}/baseline".format(output_dir)
+    checkpoint_dir = "{}/supervised".format(output_dir)
     train_summarization_model(data_dir="wikilingua",
                               lang_pairs=",".join(["{}-{}".format(language_pair[0], language_pair[1])
                                                    for language_pair in language_pairs_evaluation]),
                               save_dir=checkpoint_dir)
     free_memory()
     for language_pair in language_pairs_evaluation:
-        metrics["{}_{}_baseline".format(language_pair[0], language_pair[1])] = \
+        metrics["{}_{}_supervised".format(language_pair[0], language_pair[1])] = \
             generate_and_evaluate_summaries(directory="wikilingua",
                                             source_language=language_pair[0],
                                             target_language=language_pair[1],
@@ -160,7 +160,7 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                     shutil.rmtree(checkpoint_dir)
                     save_metrics(metrics, output_dir)
                     free_memory()
-            # shutil.rmtree(monolingual_checkpoint_dir)
+        shutil.rmtree(monolingual_checkpoint_dir)
 
     # train using english, spanish, russian data together, but monolingual data
     monolingual_checkpoint_dir = "{}/monolingual_multi".format(output_dir)
@@ -313,8 +313,8 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                                     append_src_tok=False)
                 save_metrics(metrics, output_dir)
                 free_memory()
-            # shutil.rmtree(tuned_adv_checkpoint_dir)
-        # shutil.rmtree(monolingual_adv_checkpoint_dir)
+            shutil.rmtree(tuned_adv_checkpoint_dir)
+        shutil.rmtree(monolingual_adv_checkpoint_dir)
 
     # Tune multilingual model using adversarial loss using kldivloss
     if adversarial_kldivloss:
@@ -394,52 +394,10 @@ def run_wikilingua_experiments(encoder_drop_residual=None, experiments_folder=""
                                                     append_src_tok=False)
                 save_metrics(metrics, output_dir)
                 free_memory()
-            # shutil.rmtree(tuned_adv_checkpoint_dir)
+            shutil.rmtree(tuned_adv_checkpoint_dir)
 
-        """
-        # few shot experiments.
-        # Tune monolingual model using few supervised data
-        for language_pair in language_pairs:
-            for data_size, max_epoch in zip([10, 100, 1000, 10000], ["12", "6", "4", "2"]):
-                if (language_pair[0] == "tr_TR" or language_pair[1] == "tr_TR") and data_size == 10000:
-                    continue
-                checkpoint_dir = "{}/wikilingua_{}/{}-{}".format(output_dir, data_size, language_pair[0],
-                                                                 language_pair[1])
-                train_summarization_model(data_dir="wikilingua_{}".format(data_size),
-                                          lang_pairs="{}-{}".format(language_pair[0], language_pair[1]),
-                                          checkpoint="{}/checkpoint_last.pt".format(monolingual_adv_checkpoint_dir),
-                                          save_dir=checkpoint_dir,
-                                          encoder_drop_residual=encoder_drop_residual,
-                                          freeze_embeddings=freeze_embeddings,
-                                          num_workers="1",
-                                          validate=False,
-                                          max_epoch=max_epoch,
-                                          use_encoder_output_adapter=use_encoder_output_adapter,
-                                          use_decoder_adapter=use_decoder_adapter,
-                                          use_encoder_adapter=use_encoder_adapter,
-                                          masked_labels=masked_labels,
-                                          label_smoothing=label_smoothing,
-                                          append_src_tok=False)
-                free_memory()
-                metrics["{}_{}_mono_adv_kldivloss_{}".format(language_pair[0], language_pair[1], data_size)] = \
-                    generate_and_evaluate_summaries(directory="wikilingua",
-                                                    source_language=language_pair[0],
-                                                    target_language=language_pair[1],
-                                                    lang_pairs="{}-{}".format(language_pair[0], language_pair[1]),
-                                                    checkpoint="{}/checkpoint_last.pt".format(checkpoint_dir),
-                                                    lenpen=lenpen,
-                                                    min_len=min_len,
-                                                    use_encoder_output_adapter=use_encoder_output_adapter,
-                                                    use_decoder_adapter=use_decoder_adapter,
-                                                    use_encoder_adapter=use_encoder_adapter,
-                                                    append_src_tok=False)
-                shutil.rmtree(checkpoint_dir)
-                save_metrics(metrics, output_dir)
-                free_memory()
-        """
-
-        # shutil.rmtree(monolingual_adv_checkpoint_dir)
-    # shutil.rmtree(monolingual_checkpoint_dir)
+        shutil.rmtree(monolingual_adv_checkpoint_dir)
+    shutil.rmtree(monolingual_checkpoint_dir)
 
 
 if __name__ == "__main__":
