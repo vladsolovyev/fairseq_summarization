@@ -121,11 +121,11 @@ Results description:
 7. gu_IN_multiEnEsRu_10/100/1000 - tune multilingual model from the experiment no. 7 using 10/100/1000 samples from gujarati train data and evaluate using gujarati test data
 
 Configurations:
-1. "base_model" - baseline and few-shot results ([results](./xlsum_results/2023-10-12/base_model/metrics.csv)
-2. "unfrozen_embeddings" - model with fine-tuned embeddings ([results](./xlsum_results/2023-10-12/unfrozen_embeddings/metrics.csv)
-3. "frozen_decoder" - only encoder layers are fine-tuned ([results](./xlsum_results/2023-10-12/frozen_decoder/metrics.csv)
-4. "frozen_except_attn_and_layer_norm" - only self-attention in encoder layers and encoder-attention in decoder layers and normalization layers are fine-tuned ([results](./xlsum_results/2023-10-12/frozen_except_attn_and_layer_norm/metrics.csv)
-5. "frozen_except_attn_qk" - only queries and keys in self-attention in encoder layers and queries and keys in encoder-attention in decoder layers are fine-tuned ([results](./xlsum_results/2023-10-12/frozen_except_attn_qk/metrics.csv)
+1. "base_model" - baseline and few-shot results ([results](./xlsum_results/2023-10-12/base_model/metrics.csv))
+2. "unfrozen_embeddings" - model with fine-tuned embeddings ([results](./xlsum_results/2023-10-12/unfrozen_embeddings/metrics.csv))
+3. "frozen_decoder" - only encoder layers are fine-tuned ([results](./xlsum_results/2023-10-12/frozen_decoder/metrics.csv))
+4. "frozen_except_attn_and_layer_norm" - only self-attention in encoder layers and encoder-attention in decoder layers and normalization layers are fine-tuned ([results](./xlsum_results/2023-10-12/frozen_except_attn_and_layer_norm/metrics.csv))
+5. "frozen_except_attn_qk" - only queries and keys in self-attention in encoder layers and queries and keys in encoder-attention in decoder layers are fine-tuned ([results](./xlsum_results/2023-10-12/frozen_except_attn_qk/metrics.csv))
 
 #### Cross-lingual using WikiLingua dataset
 
@@ -151,7 +151,7 @@ Results description:
 8. *_translated - translation-based solution
 
 Configurations:
-1. "base_model_with_adv" - baselines, few-shot results, adversarial loss, adversarial loss with KL-divergence ([results](./wiki_results/2023-10-12/base_model_with_adv/metrics.csv)
-2. "residual_drop_at_7" - experiments with removed residual connection in the 7th encoder layer ([results](./wiki_results/2023-10-12/residual_drop_at_7/metrics.csv)
-3. "encoder_output" - experiments with language-specific encoder output adapters ([results](./wiki_results/2023-10-12/encoder_output/metrics.csv)
-4. "decoder_adapter_tgt_lang_id" - experiments with language-specific layer adapters ([results](./wiki_results/2023-10-12/decoder_adapter_tgt_lang_id/metrics.csv)
+1. "base_model_with_adv" - baselines, few-shot results, adversarial loss, adversarial loss with KL-divergence ([results](./wiki_results/2023-10-12/base_model_with_adv/metrics.csv))
+2. "residual_drop_at_7" - experiments with removed residual connection in the 7th encoder layer ([results](./wiki_results/2023-10-12/residual_drop_at_7/metrics.csv))
+3. "encoder_output" - experiments with language-specific encoder output adapters ([results](./wiki_results/2023-10-12/encoder_output/metrics.csv))
+4. "decoder_adapter_tgt_lang_id" - experiments with language-specific layer adapters ([results](./wiki_results/2023-10-12/decoder_adapter_tgt_lang_id/metrics.csv))
