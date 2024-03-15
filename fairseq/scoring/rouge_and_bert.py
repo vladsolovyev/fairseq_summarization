@@ -83,7 +83,8 @@ class RougeBertScoreScorer(BaseScorer):
         for values in zip(*fmeasure_rouge.values()):
             aggregator.add_scores(dict(zip(fmeasure_rouge, values)))
         aggregator_result = aggregator.aggregate()
-        results = {k: np.mean(v) for k, v in fmeasure_rouge.items()}
+        results = evaluate.load("rouge", cache_dir="./cache").\
+            compute(predictions=self.pred, references=self.ref, use_stemmer=use_stemmer)
         for key, value in aggregator_result.items():
             for level, value_per_level in zip(value._fields, value):
                 results["{}_{}".format(key, level)] = value_per_level
